@@ -87,7 +87,12 @@ const refreshData = () => {
 <style scoped>
 .layout-container {
   height: 100vh;
+  min-height: 100vh;
+  width: 100vw;
   min-width: 1200px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .layout-aside {
@@ -164,7 +169,10 @@ const refreshData = () => {
   background-color: #f5f7fa;
   padding: 24px;
   min-height: calc(100vh - 64px);
+  height: calc(100vh - 64px);
   overflow-y: auto;
+  margin: 0;
+  width: 100%;
 }
 
 /* 响应式布局 */

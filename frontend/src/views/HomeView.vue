@@ -1,64 +1,63 @@
 <template>
-  <Layout>
-    <div class="dashboard">
-      <!-- 统计卡片区域 -->
-      <el-row :gutter="24" class="stats-row">
-        <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover">
-            <div class="stat-content">
-              <div class="stat-icon-wrapper" style="background-color: #e6f7ff;">
-                <el-icon class="stat-icon" style="color: #1890ff; font-size: 24px;"><UserFilled /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-number">{{ statistics?.total_students || 0 }}</div>
-                <div class="stat-label">总学生数</div>
-              </div>
+  <div class="dashboard">
+    <!-- 统计卡片区域 -->
+    <el-row :gutter="24" class="stats-row">
+      <el-col :span="6" :xs="24" :sm="12" :md="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-icon-wrapper" style="background-color: #e6f7ff;">
+              <el-icon class="stat-icon" style="color: #1890ff; font-size: 24px;"><UserFilled /></el-icon>
             </div>
-          </el-card>
-        </el-col>
-        
-        <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover">
-            <div class="stat-content">
-              <div class="stat-icon-wrapper" style="background-color: #f6ffed;">
-                <el-icon class="stat-icon" style="color: #52c41a; font-size: 24px;"><User /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-number">{{ statistics?.active_students || 0 }}</div>
-                <div class="stat-label">在读学生</div>
-              </div>
+            <div class="stat-info">
+              <div class="stat-number">{{ statistics?.total_students || 0 }}</div>
+              <div class="stat-label">总学生数</div>
             </div>
-          </el-card>
-        </el-col>
-        
-        <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover">
-            <div class="stat-content">
-              <div class="stat-icon-wrapper" style="background-color: #fff7e6;">
-                <el-icon class="stat-icon" style="color: #fa8c16; font-size: 24px;"><Money /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-number">¥{{ formatMoney(paymentStats?.total_amount || 0) }}</div>
-                <div class="stat-label">总缴费金额</div>
-              </div>
+          </div>
+        </el-card>
+      </el-col>
+      
+      <el-col :span="6" :xs="24" :sm="12" :md="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-icon-wrapper" style="background-color: #f6ffed;">
+              <el-icon class="stat-icon" style="color: #52c41a; font-size: 24px;"><User /></el-icon>
             </div>
-          </el-card>
-        </el-col>
-        
-        <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover">
-            <div class="stat-content">
-              <div class="stat-icon-wrapper" style="background-color: #fff1f0;">
-                <el-icon class="stat-icon" style="color: #f5222d; font-size: 24px;"><Document /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-number">{{ paymentStats?.total_payments || 0 }}</div>
-                <div class="stat-label">缴费记录</div>
-              </div>
+            <div class="stat-info">
+              <div class="stat-number">{{ statistics?.active_students || 0 }}</div>
+              <div class="stat-label">在读学生</div>
             </div>
-          </el-card>
-        </el-col>
-      </el-row>
+          </div>
+        </el-card>
+      </el-col>
+      
+      <el-col :span="6" :xs="24" :sm="12" :md="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-icon-wrapper" style="background-color: #fff7e6;">
+              <el-icon class="stat-icon" style="color: #fa8c16; font-size: 24px;"><Money /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-number">¥{{ formatMoney(paymentStats?.total_amount || 0) }}</div>
+              <div class="stat-label">总缴费金额</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+      
+      <el-col :span="6" :xs="24" :sm="12" :md="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-icon-wrapper" style="background-color: #fff1f0;">
+              <el-icon class="stat-icon" style="color: #f5222d; font-size: 24px;"><Document /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-number">{{ paymentStats?.total_payments || 0 }}</div>
+              <div class="stat-label">缴费记录</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
       <el-row :gutter="24" class="charts-row">
         <el-col :span="12" :xs="24" :sm="24" :md="12">
@@ -123,13 +122,11 @@
           </el-card>
         </el-col>
       </el-row>
-    </div>
-  </Layout>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import Layout from '@/components/Layout.vue'
 import { useStudentStore } from '@/stores/student'
 import { useFinanceStore } from '@/stores/finance'
 import * as echarts from 'echarts'
@@ -380,7 +377,10 @@ onMounted(async () => {
 .dashboard {
   padding: 24px;
   background-color: #f5f7fa;
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 88px);
+  height: calc(100vh - 88px);
+  overflow-y: auto;
+  margin: 0;
 }
 
 /* 统计卡片区域 */

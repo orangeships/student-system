@@ -74,15 +74,24 @@ nav a:first-of-type {
 
 <style>
 /* 全局样式优化 */
+* {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  width: 100%;
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  background-color: #f5f7fa;
 }
 
 #app {
   height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* Element Plus 样式优化 */

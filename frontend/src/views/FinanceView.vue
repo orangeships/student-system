@@ -1,21 +1,20 @@
 <template>
-  <Layout>
-    <div class="finance-view">
-      <el-card class="finance-card" shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <div class="header-left">
-              <el-icon style="color: #52c41a; margin-right: 8px;"><Money /></el-icon>
-              <span class="card-title">费用管理</span>
-              <el-tag type="info" size="small" style="margin-left: 12px;">
-                共 {{ financeStore.totalCount }} 条记录
-              </el-tag>
-            </div>
-            <el-button type="primary" @click="showAddDialog = true" :icon="Plus">
-              新增缴费记录
-            </el-button>
+  <div class="finance-view">
+    <el-card class="finance-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <div class="header-left">
+            <el-icon style="color: #52c41a; margin-right: 8px;"><Money /></el-icon>
+            <span class="card-title">费用管理</span>
+            <el-tag type="info" size="small" style="margin-left: 12px;">
+              共 {{ financeStore.totalCount }} 条记录
+            </el-tag>
           </div>
-        </template>
+          <el-button type="primary" @click="showAddDialog = true" :icon="Plus">
+            新增缴费记录
+          </el-button>
+        </div>
+      </template>
 
       <!-- 搜索和筛选 -->
       <div class="search-section">
@@ -366,7 +365,6 @@
       </template>
     </el-dialog>
   </div>
-  </Layout>
 </template>
 
 <script setup lang="ts">
@@ -376,7 +374,6 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { useFinanceStore } from '@/stores/finance'
 import { useStudentStore } from '@/stores/student'
 import type { FeeRecord } from '@/api/finance'
-import Layout from '@/components/Layout.vue'
 import {
   Money,
   Search,
@@ -629,7 +626,10 @@ onMounted(async () => {
 .finance-view {
   padding: 24px;
   background: #f5f7fa;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - 88px);
+  height: calc(100vh - 88px);
+  overflow-y: auto;
+  margin: 0;
 }
 
 .finance-card {

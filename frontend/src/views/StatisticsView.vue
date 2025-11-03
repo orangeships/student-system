@@ -171,7 +171,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import echarts from 'echarts'
+import * as echarts from 'echarts'
 import { useStudentStore } from '@/stores/student'
 import { useFinanceStore } from '@/stores/finance'
 import type { StudentStatistics } from '@/api/student'
