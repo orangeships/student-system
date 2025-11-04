@@ -41,8 +41,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "django_filters",
     "corsheaders",
-    "students",
+    "transactions",
     "finance",
+    "students",
 ]
 
 MIDDLEWARE = [

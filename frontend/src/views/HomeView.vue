@@ -18,46 +18,46 @@
       <!-- 统计卡片区域 -->
       <el-row :gutter="24" class="stats-row">
         <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover" @click="navigateToStudents">
+          <el-card class="stat-card" shadow="hover" @click="navigateToTransactions">
             <div class="stat-content">
               <div class="stat-icon-wrapper" style="background-color: #e6f7ff;">
-                <el-icon class="stat-icon" style="color: #1890ff; font-size: 24px;"><UserFilled /></el-icon>
+                <el-icon class="stat-icon" style="color: #1890ff; font-size: 24px;"><Money /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number" :class="{ 'skeleton': loading }">{{ statistics?.total_students || 0 }}</div>
-                <div class="stat-label">总学生数</div>
+                <div class="stat-number" :class="{ 'skeleton': loading }">{{ (statistics as any)?.total_transactions || 0 }}</div>
+                <div class="stat-label">总交易数</div>
               </div>
             </div>
             <div class="stat-footer">
-              <span class="stat-trend" v-if="studentTrend !== 0">
-                <el-icon :class="{ 'trend-up': studentTrend > 0, 'trend-down': studentTrend < 0 }">
-                  <CaretTop v-if="studentTrend > 0" />
+              <span class="stat-trend" v-if="transactionTrend !== 0">
+                <el-icon :class="{ 'trend-up': transactionTrend > 0, 'trend-down': transactionTrend < 0 }">
+                  <CaretTop v-if="transactionTrend > 0" />
                   <CaretBottom v-else />
                 </el-icon>
-                {{ Math.abs(studentTrend) }}% 较上月
+                {{ Math.abs(transactionTrend) }}% 较上月
               </span>
             </div>
           </el-card>
         </el-col>
         
         <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover" @click="filterActiveStudents">
+          <el-card class="stat-card" shadow="hover" @click="navigateToBudget">
             <div class="stat-content">
               <div class="stat-icon-wrapper" style="background-color: #f6ffed;">
-                <el-icon class="stat-icon" style="color: #52c41a; font-size: 24px;"><User /></el-icon>
+                <el-icon class="stat-icon" style="color: #52c41a; font-size: 24px;"><Wallet /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number" :class="{ 'skeleton': loading }">{{ statistics?.active_students || 0 }}</div>
-                <div class="stat-label">在读学生</div>
+                <div class="stat-number" :class="{ 'skeleton': loading }">¥{{ formatMoney((statistics as any)?.total_budget || 0) }}</div>
+                <div class="stat-label">总预算</div>
               </div>
             </div>
             <div class="stat-footer">
-              <span class="stat-trend" v-if="activeStudentTrend !== 0">
-                <el-icon :class="{ 'trend-up': activeStudentTrend > 0, 'trend-down': activeStudentTrend < 0 }">
-                  <CaretTop v-if="activeStudentTrend > 0" />
+              <span class="stat-trend" v-if="budgetTrend !== 0">
+                <el-icon :class="{ 'trend-up': budgetTrend > 0, 'trend-down': budgetTrend < 0 }">
+                  <CaretTop v-if="budgetTrend > 0" />
                   <CaretBottom v-else />
                 </el-icon>
-                {{ Math.abs(activeStudentTrend) }}% 较上月
+                {{ Math.abs(budgetTrend) }}% 较上月
               </span>
             </div>
           </el-card>
@@ -67,43 +67,43 @@
           <el-card class="stat-card" shadow="hover" @click="navigateToFinance">
             <div class="stat-content">
               <div class="stat-icon-wrapper" style="background-color: #fff7e6;">
-                <el-icon class="stat-icon" style="color: #fa8c16; font-size: 24px;"><Money /></el-icon>
+                <el-icon class="stat-icon" style="color: #fa8c16; font-size: 24px;"><TrendCharts /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number" :class="{ 'skeleton': loading }">¥{{ formatMoney(paymentStats?.total_amount || 0) }}</div>
-                <div class="stat-label">总缴费金额</div>
+                <div class="stat-number" :class="{ 'skeleton': loading }">¥{{ formatMoney((statistics as any)?.total_expense || 0) }}</div>
+                <div class="stat-label">总支出</div>
               </div>
             </div>
             <div class="stat-footer">
-              <span class="stat-trend" v-if="paymentTrend !== 0">
-                <el-icon :class="{ 'trend-up': paymentTrend > 0, 'trend-down': paymentTrend < 0 }">
-                  <CaretTop v-if="paymentTrend > 0" />
+              <span class="stat-trend" v-if="expenseTrend !== 0">
+                <el-icon :class="{ 'trend-up': expenseTrend > 0, 'trend-down': expenseTrend < 0 }">
+                  <CaretTop v-if="expenseTrend > 0" />
                   <CaretBottom v-else />
                 </el-icon>
-                {{ Math.abs(paymentTrend) }}% 较上月
+                {{ Math.abs(expenseTrend) }}% 较上月
               </span>
             </div>
           </el-card>
         </el-col>
         
         <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover" @click="navigateToFinance">
+          <el-card class="stat-card" shadow="hover" @click="navigateToGoals">
             <div class="stat-content">
-              <div class="stat-icon-wrapper" style="background-color: #fff1f0;">
-                <el-icon class="stat-icon" style="color: #f5222d; font-size: 24px;"><Document /></el-icon>
+              <div class="stat-icon-wrapper" style="background-color: #f0f5ff;">
+                <el-icon class="stat-icon" style="color: #2f54eb; font-size: 24px;"><Flag /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number" :class="{ 'skeleton': loading }">{{ paymentStats?.total_payments || 0 }}</div>
-                <div class="stat-label">缴费记录</div>
+                <div class="stat-number" :class="{ 'skeleton': loading }">{{ (statistics as any)?.active_goals || 0 }}</div>
+                <div class="stat-label">活跃目标</div>
               </div>
             </div>
             <div class="stat-footer">
-              <span class="stat-trend" v-if="recordTrend !== 0">
-                <el-icon :class="{ 'trend-up': recordTrend > 0, 'trend-down': recordTrend < 0 }">
-                  <CaretTop v-if="recordTrend > 0" />
+              <span class="stat-trend" v-if="goalsTrend !== 0">
+                <el-icon :class="{ 'trend-up': goalsTrend > 0, 'trend-down': goalsTrend < 0 }">
+                  <CaretTop v-if="goalsTrend > 0" />
                   <CaretBottom v-else />
                 </el-icon>
-                {{ Math.abs(recordTrend) }}% 较上月
+                {{ Math.abs(goalsTrend) }}% 较上月
               </span>
             </div>
           </el-card>
@@ -116,7 +116,7 @@
             <template #header>
               <div class="card-header">
                 <el-icon style="color: #1890ff; margin-right: 8px;"><PieChart /></el-icon>
-                <span>学生性别分布</span>
+                <span>支出分类分布</span>
                 <el-tooltip content="点击查看详细分析" placement="top">
                   <el-button 
                     type="primary" 
@@ -130,15 +130,15 @@
               </div>
             </template>
             <div class="chart-wrapper">
-              <div v-if="chartLoading.gender" class="chart-loading">
+              <div v-if="chartLoading.expense" class="chart-loading">
                 <el-icon class="loading-icon" size="32"><Loading /></el-icon>
               </div>
-              <div v-else-if="chartError.gender" class="chart-error">
+              <div v-else-if="chartError.expense" class="chart-error">
                 <el-icon size="32" color="#f5222d"><Warning /></el-icon>
                 <p>图表加载失败</p>
-                <el-button type="primary" link @click="reloadGenderChart">重试</el-button>
+                <el-button type="primary" link @click="reloadExpenseChart">重试</el-button>
               </div>
-              <div v-else ref="genderChart" class="chart-container"></div>
+              <div v-else ref="expenseChart" class="chart-container"></div>
             </div>
           </el-card>
         </el-col>
@@ -148,7 +148,7 @@
             <template #header>
               <div class="card-header">
                 <el-icon style="color: #52c41a; margin-right: 8px;"><TrendCharts /></el-icon>
-                <span>每月缴费趋势</span>
+                <span>月度收支趋势</span>
                 <el-tooltip content="点击查看详细分析" placement="top">
                   <el-button 
                     type="primary" 
@@ -162,15 +162,15 @@
               </div>
             </template>
             <div class="chart-wrapper">
-              <div v-if="chartLoading.payment" class="chart-loading">
+              <div v-if="chartLoading.trend" class="chart-loading">
                 <el-icon class="loading-icon" size="32"><Loading /></el-icon>
               </div>
-              <div v-else-if="chartError.payment" class="chart-error">
+              <div v-else-if="chartError.trend" class="chart-error">
                 <el-icon size="32" color="#f5222d"><Warning /></el-icon>
                 <p>图表加载失败</p>
-                <el-button type="primary" link @click="reloadPaymentChart">重试</el-button>
+                <el-button type="primary" link @click="reloadTrendChart">重试</el-button>
               </div>
-              <div v-else ref="paymentChart" class="chart-container"></div>
+              <div v-else ref="trendChart" class="chart-container"></div>
             </div>
           </el-card>
         </el-col>
@@ -207,7 +207,7 @@
                 <el-empty description="暂无操作记录" :image-size="64">
                   <template #description>
                     <p>暂无操作记录</p>
-                    <p class="empty-hint">当您添加或编辑学生信息时，操作记录将显示在这里</p>
+                    <p class="empty-hint">当您添加交易或管理预算时，操作记录将显示在这里</p>
                   </template>
                 </el-empty>
               </div>
@@ -225,7 +225,7 @@
                   </div>
                   <div class="activity-content">
                     <div class="activity-title">{{ activity.action }}</div>
-                    <div class="activity-subtitle">学生：{{ activity.student_name }}</div>
+                    <div class="activity-subtitle">{{ activity.description }} <span v-if="activity.amount > 0">¥{{ formatMoney(activity.amount) }}</span></div>
                     <div class="activity-time">{{ formatDateTime(activity.created_at) }}</div>
                   </div>
                   <div class="activity-action">
@@ -244,17 +244,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useStudentStore } from '@/stores/student'
 import { useFinanceStore } from '@/stores/finance'
 import * as echarts from 'echarts'
 import { showSuccess, showError, showInfo } from '@/utils/message'
 import { 
-  UserFilled, 
-  User, 
   Money, 
-  Document, 
-  PieChart, 
+  Wallet, 
   TrendCharts, 
+  Flag,
+  PieChart, 
   Clock,
   Plus,
   Edit,
@@ -264,85 +262,88 @@ import {
   Loading,
   Warning,
   CaretTop,
-  CaretBottom
+  CaretBottom,
+  Document
 } from '@element-plus/icons-vue'
 
-const studentStore = useStudentStore()
 const financeStore = useFinanceStore()
 
-const statistics = computed(() => studentStore.statistics)
+const statistics = computed(() => financeStore.statistics)
 const paymentStats = computed(() => financeStore.statistics)
 
 // 图表引用
-const genderChart = ref<HTMLElement>()
-const paymentChart = ref<HTMLElement>()
+const expenseChart = ref<HTMLElement>()
+const trendChart = ref<HTMLElement>()
 
 // 状态定义
-const studentLoading = ref(false)
-const studentError = ref('')
 const financeLoading = ref(false)
 const financeError = ref('')
-const genderChartLoading = ref(false)
-const genderChartError = ref('')
-const paymentChartLoading = ref(false)
-const paymentChartError = ref('')
+const expenseChartLoading = ref(false)
+const expenseChartError = ref('')
+const trendChartLoading = ref(false)
+const trendChartError = ref('')
 const activitiesLoading = ref(false)
 const loading = ref(false)
 const error = ref('')
 const router = useRouter()
 
 // 计算属性
-const studentTrend = ref(0)
-const activeStudentTrend = ref(0)
-const paymentTrend = ref(0)
-const recordTrend = ref(0)
+const transactionTrend = ref(0)
+const budgetTrend = ref(0)
+const expenseTrend = ref(0)
+const goalsTrend = ref(0)
 
 // 图表加载状态
 const chartLoading = ref({
-  gender: false,
-  payment: false
+  expense: false,
+  trend: false
 })
 
 const chartError = ref({
-  gender: '',
-  payment: ''
+  expense: '',
+  trend: ''
 })
 
 // 模拟最近活动数据
 const recentActivities = ref([
   {
     id: 1,
-    action: '添加学生',
-    student_name: '张三',
-    student_id: '2024001',
+    action: '添加交易',
+    description: '餐饮支出',
+    category: 'food',
+    amount: 128.50,
     created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString()
   },
   {
     id: 2,
-    action: '缴费登记',
-    student_name: '李四',
-    student_id: '2024002',
+    action: '预算更新',
+    description: '月度预算调整',
+    category: 'budget',
+    amount: 0,
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
   },
   {
     id: 3,
-    action: '编辑学生信息',
-    student_name: '王五',
-    student_id: '2024003',
+    action: '添加交易',
+    description: '交通费用',
+    category: 'transport',
+    amount: 45.00,
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString()
   },
   {
     id: 4,
-    action: '退费处理',
-    student_name: '赵六',
-    student_id: '2024004',
+    action: '目标达成',
+    description: '储蓄目标完成',
+    category: 'savings',
+    amount: 1000.00,
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString()
   },
   {
     id: 5,
-    action: '添加学生',
-    student_name: '钱七',
-    student_id: '2024005',
+    action: '添加交易',
+    description: '购物支出',
+    category: 'shopping',
+    amount: 299.90,
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
   }
 ])
@@ -372,62 +373,62 @@ const refreshActivities = async () => {
 // 处理活动点击
 const handleActivityClick = (activity: any) => {
   // 根据活动类型导航到对应页面
-  if (activity.action.includes('学生')) {
+  if (activity.action.includes('交易') || activity.action.includes('支出')) {
     router.push({
-      name: 'students',
-      query: { search: activity.student_name }
+      name: 'transactions',
+      query: { search: activity.description }
     })
-  } else if (activity.action.includes('缴费') || activity.action.includes('退费')) {
+  } else if (activity.action.includes('预算') || activity.action.includes('目标')) {
     router.push({
-      name: 'finance',
-      query: { student_name: activity.student_name }
+      name: 'budget',
+      query: { category: activity.category }
     })
   }
   
-  showInfo(`正在查看 ${activity.student_name} 的详细信息`)
+  showInfo(`正在查看 ${activity.description || activity.action} 的详细信息`)
 }
 
-const maxMajorCount = computed(() => {
-  if (!statistics.value?.by_major?.length) return 0
-  return Math.max(...statistics.value.by_major.map(item => item.count))
+const maxCategoryCount = computed(() => {
+  if (!(statistics.value as any)?.by_category?.length) return 0
+  return Math.max(...(statistics.value as any).by_category.map((item: any) => item.amount))
 })
 
-const maxGradeCount = computed(() => {
-  if (!statistics.value?.by_grade?.length) return 0
-  return Math.max(...statistics.value.by_grade.map(item => item.count))
+const maxMonthlyCount = computed(() => {
+  if (!statistics.value?.monthly_stats?.length) return 0
+  return Math.max(...statistics.value.monthly_stats.map(item => item.total_amount))
 })
 
 const getBarWidth = (value: number, max: number) => {
   return max > 0 ? (value / max) * 100 : 0
 }
 
-// 更新性别分布图表
-const updateGenderChart = () => {
-  if (!genderChart.value) return
+const getCategoryBarWidth = (amount: number) => {
+  return getBarWidth(amount, maxCategoryCount.value)
+}
+
+const getMonthlyBarWidth = (amount: number) => {
+  return getBarWidth(amount, maxMonthlyCount.value)
+}
+
+// 更新支出分类图表
+const updateExpenseChart = () => {
+  if (!expenseChart.value) return
   
-  const chart = echarts.init(genderChart.value)
+  const chart = echarts.init(expenseChart.value)
   
-  // 计算性别统计
-  let maleCount = 0
-  let femaleCount = 0
-  
-  if (statistics.value?.total_students) {
-    // 如果有实际统计数据，使用实际数据
-    if (statistics.value.by_gender) {
-      const genderStats = statistics.value.by_gender
-      maleCount = genderStats.find(item => item.gender === 'M')?.count || 0
-      femaleCount = genderStats.find(item => item.gender === 'F')?.count || 0
-    } else {
-      // 否则使用模拟数据
-      maleCount = Math.floor((statistics.value.total_students || 0) * 0.6)
-      femaleCount = Math.floor((statistics.value.total_students || 0) * 0.4)
-    }
-  }
+  // 模拟支出分类数据
+  const expenseData = [
+    { value: 1200, name: '餐饮' },
+    { value: 800, name: '交通' },
+    { value: 600, name: '购物' },
+    { value: 400, name: '娱乐' },
+    { value: 300, name: '其他' }
+  ]
   
   const option = {
     tooltip: {
       trigger: 'item',
-      formatter: '{a} <br/>{b}: {c} ({d}%)'
+      formatter: '{a} <br/>{b}: ¥{c} ({d}%)'
     },
     legend: {
       orient: 'horizontal',
@@ -436,10 +437,10 @@ const updateGenderChart = () => {
         fontSize: 12
       }
     },
-    color: ['#1890ff', '#52c41a'],
+    color: ['#1890ff', '#52c41a', '#fa8c16', '#f5222d', '#722ed1'],
     series: [
       {
-        name: '性别分布',
+        name: '支出分类',
         type: 'pie',
         radius: ['40%', '70%'],
         center: ['50%', '40%'],
@@ -458,10 +459,7 @@ const updateGenderChart = () => {
         labelLine: {
           show: false
         },
-        data: [
-          { value: maleCount, name: '男' },
-          { value: femaleCount, name: '女' }
-        ]
+        data: expenseData
       }
     ]
   }
@@ -474,31 +472,42 @@ const updateGenderChart = () => {
   })
 }
 
-// 更新缴费趋势图表
-const updatePaymentChart = () => {
-  if (!paymentChart.value || !paymentStats.value?.monthly_stats) return
+// 更新收支趋势图表
+const updateTrendChart = () => {
+  if (!trendChart.value) return
   
-  const chart = echarts.init(paymentChart.value)
-  const data = paymentStats.value.monthly_stats
+  const chart = echarts.init(trendChart.value)
+  
+  // 模拟月度收支数据
+  const months = ['1月', '2月', '3月', '4月', '5月', '6月']
+  const incomeData = [8000, 8500, 7800, 9200, 8800, 9500]
+  const expenseData = [6500, 7200, 6800, 7500, 7100, 7800]
   
   const option = {
     tooltip: {
       trigger: 'axis',
       formatter: function(params: any) {
-        const param = params[0]
-        return `${param.name}<br/>缴费金额: ¥${param.value.toLocaleString()}`
+        let result = params[0].name + '<br/>'
+        params.forEach((param: any) => {
+          result += param.seriesName + ': ¥' + param.value.toLocaleString() + '<br/>'
+        })
+        return result
       }
+    },
+    legend: {
+      data: ['收入', '支出'],
+      bottom: '5%'
     },
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
       containLabel: true
     },
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: data.map((item: any) => item.month.substring(5)), // 只显示月份
+      data: months,
       axisLabel: {
         fontSize: 11
       }
@@ -521,9 +530,9 @@ const updatePaymentChart = () => {
     },
     series: [
       {
-        name: '缴费金额',
+        name: '收入',
         type: 'line',
-        data: data.map((item: any) => item.total_amount),
+        data: incomeData,
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
@@ -532,13 +541,48 @@ const updatePaymentChart = () => {
           color: '#52c41a'
         },
         areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(82, 196, 26, 0.3)' },
-            { offset: 1, color: 'rgba(82, 196, 26, 0.1)' }
-          ])
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(82, 196, 26, 0.3)' },
+              { offset: 1, color: 'rgba(82, 196, 26, 0.1)' }
+            ]
+          }
         },
         itemStyle: {
           color: '#52c41a'
+        }
+      },
+      {
+        name: '支出',
+        type: 'line',
+        data: expenseData,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {
+          width: 3,
+          color: '#f5222d'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(245, 34, 45, 0.3)' },
+              { offset: 1, color: 'rgba(245, 34, 45, 0.1)' }
+            ]
+          }
+        },
+        itemStyle: {
+          color: '#f5222d'
         }
       }
     ]
@@ -592,41 +636,42 @@ const formatDateTime = (dateTime: string) => {
 }
 
 // 导航方法
-const navigateToStudents = () => {
-  router.push({ name: 'students' })
+const navigateToTransactions = () => {
+  router.push({ name: 'transactions' })
+}
+
+const navigateToBudget = () => {
+  router.push({ name: 'budget' })
 }
 
 const navigateToFinance = () => {
   router.push({ name: 'finance' })
 }
 
+const navigateToGoals = () => {
+  router.push({ name: 'goals' })
+}
+
 const navigateToStatistics = () => {
   router.push({ name: 'statistics' })
 }
 
-const filterActiveStudents = () => {
-  router.push({ 
-    name: 'students',
-    query: { status: 'active' }
-  })
-}
-
 // 重新加载图表
-const reloadGenderChart = () => {
-  chartError.gender = ''
-  chartLoading.gender = true
+const reloadExpenseChart = () => {
+  chartError.value.expense = ''
+  chartLoading.value.expense = true
   setTimeout(() => {
-    chartLoading.gender = false
-    updateGenderChart()
+    chartLoading.value.expense = false
+    updateExpenseChart()
   }, 500)
 }
 
-const reloadPaymentChart = () => {
-  chartError.payment = ''
-  chartLoading.payment = true
+const reloadTrendChart = () => {
+  chartError.value.trend = ''
+  chartLoading.value.trend = true
   setTimeout(() => {
-    chartLoading.payment = false
-    updatePaymentChart()
+    chartLoading.value.trend = false
+    updateTrendChart()
   }, 500)
 }
 
@@ -635,7 +680,7 @@ const loadData = async () => {
   loading.value = true
   error.value = ''
   try {
-    await studentStore.fetchStatistics()
+    // Only load finance statistics since this is now a personal finance system
     await financeStore.fetchStatistics()
     loading.value = false
   } catch (err) {
@@ -649,8 +694,8 @@ onMounted(async () => {
   
   // 初始化图表
   setTimeout(() => {
-    updateGenderChart()
-    updatePaymentChart()
+    updateExpenseChart()
+    updateTrendChart()
   }, 100)
 })
 </script>

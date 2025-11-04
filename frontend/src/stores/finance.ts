@@ -122,7 +122,7 @@ export const useFinanceStore = defineStore('finance', () => {
         loading.value = true
         error.value = null
         const response = await financeApi.getPaymentStatistics(params)
-        statistics.value = response
+        statistics.value = response.data
         return response
       },
       {
@@ -140,12 +140,13 @@ export const useFinanceStore = defineStore('finance', () => {
       async () => {
         loading.value = true
         error.value = null
-        const updatedRecord = await financeApi.updateFeeRecord(id, recordData)
+        const response = await financeApi.updateFeeRecord(id, recordData)
+        const updatedRecord = response.data
         const index = feeRecords.value.findIndex(r => r.id === id)
         if (index !== -1) {
           feeRecords.value[index] = updatedRecord
         }
-        return updatedRecord
+        return response
       },
       {
         success: '缴费记录更新成功',

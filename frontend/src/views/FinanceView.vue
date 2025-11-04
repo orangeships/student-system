@@ -138,8 +138,8 @@
             <el-button @click="handleRefresh" :icon="Refresh" :loading="financeStore.loading">
               刷新
             </el-button>
-            <el-button @click="toggleDensity" :icon="tableSize === 'small' ? Expand : Compress">
-              {{ tableSize === 'small' ? '紧凑' : '宽松' }}
+            <el-button @click="toggleDensity" :icon="tableSize === 'small' ? Expand : Remove">
+              {{ tableSize === 'small' ? '默认' : '紧凑' }}
             </el-button>
           </div>
         </div>
@@ -194,7 +194,7 @@
               <el-switch
                 v-model="row.status"
                 :active-value="'paid'"
-                :inactive-value="'unpaid'"
+                :inactive-value="'pending'"
                 @change="handleStatusChange(row)"
                 :disabled="row.status === 'partial'"
               >
@@ -428,7 +428,7 @@ import {
   RefreshLeft,
   Download,
   Expand,
-  Compress
+  Remove
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -443,7 +443,7 @@ const currentRecord = ref<FeeRecord | null>(null)
 
 const selectedRecords = ref<FeeRecord[]>([])
 const tableSize = ref<'default' | 'small'>('default')
-const searchTimer = ref<NodeJS.Timeout | null>(null)
+const searchTimer = ref<number | null>(null)
 
 const searchForm = reactive({
   student_name: '',
@@ -573,13 +573,13 @@ const handleViewStudent = (row: FeeRecord) => {
 
 const handleCategoryClick = (categoryId: number) => {
   // 设置筛选条件并重新搜索
-  searchForm.category_id = categoryId
+  searchForm.category_id = categoryId.toString()
   handleSearch()
 }
 
 const handleStatusChange = async (row: FeeRecord) => {
   try {
-    const newStatus = row.status === 'paid' ? 'paid' : 'unpaid'
+    const newStatus = row.status === 'paid' ? 'pending' : 'paid'
     await financeStore.updateFeeRecord(row.id!, {
       ...row,
       status: newStatus,
@@ -587,7 +587,7 @@ const handleStatusChange = async (row: FeeRecord) => {
     })
   } catch (error) {
     // 恢复原状态
-    row.status = row.status === 'paid' ? 'unpaid' : 'paid'
+    row.status = row.status === 'paid' ? 'pending' : 'paid'
   }
 }
 
@@ -627,12 +627,12 @@ const handleExport = () => {
     '实缴金额': record.paid_amount,
     '缴费状态': getStatusLabel(record.status),
     '应缴日期': record.due_date,
-    '缴费日期': record.payment_date || '-',
-    '描述': record.description || '-'
+    '缴费日期': (record as any).payment_date || '-',
+    '描述': (record as any).description || '-'
   }))
   
   // 创建CSV内容
-  const headers = Object.keys(exportData[0])
+  const headers = Object.keys(exportData[0]!)
   const csvContent = [
     headers.join(','),
     ...exportData.map(row => headers.map(header => row[header as keyof typeof row]).join(','))

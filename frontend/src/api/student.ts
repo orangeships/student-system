@@ -46,17 +46,17 @@ export const studentApi = {
   },
 
   // 获取学生详情
-  getStudent(id: number) {
+  getStudent(id: number): Promise<Student> {
     return api.get(`/students/${id}/`)
   },
 
   // 创建学生
-  createStudent(data: Student) {
+  createStudent(data: Student): Promise<Student> {
     return api.post('/students/', data)
   },
 
   // 更新学生
-  updateStudent(id: number, data: Student) {
+  updateStudent(id: number, data: Partial<Student>): Promise<Student> {
     return api.put(`/students/${id}/`, data)
   },
 
@@ -66,7 +66,7 @@ export const studentApi = {
   },
 
   // 获取学生统计
-  getStatistics() {
+  getStatistics(): Promise<StudentStatistics> {
     return api.get('/students/statistics/')
   },
 }

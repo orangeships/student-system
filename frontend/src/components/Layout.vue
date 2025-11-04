@@ -2,7 +2,7 @@
   <el-container class="layout-container">
     <el-aside width="240px" class="layout-aside">
       <div class="logo">
-        <h2>学生管理系统</h2>
+        <h2>个人财务管理系统</h2>
       </div>
       <el-menu
         :default-active="$route.path"
@@ -18,17 +18,21 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-menu-item index="/students" class="menu-item">
-          <el-icon><UserFilled /></el-icon>
-          <span>学生管理</span>
-        </el-menu-item>
-        <el-menu-item index="/finance" class="menu-item">
+        <el-menu-item index="/transactions" class="menu-item">
           <el-icon><Money /></el-icon>
-          <span>费用管理</span>
+          <span>记账管理</span>
         </el-menu-item>
-        <el-menu-item index="/statistics" class="menu-item">
-          <el-icon><TrendCharts /></el-icon>
-          <span>统计报表</span>
+        <el-menu-item index="/categories" class="menu-item">
+          <el-icon><Collection /></el-icon>
+          <span>分类管理</span>
+        </el-menu-item>
+        <el-menu-item index="/budget" class="menu-item">
+          <el-icon><Wallet /></el-icon>
+          <span>预算管理</span>
+        </el-menu-item>
+        <el-menu-item index="/goals" class="menu-item">
+          <el-icon><Flag /></el-icon>
+          <span>财务目标</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -59,9 +63,10 @@ import { useRoute } from 'vue-router'
 import { showSuccess } from '@/utils/message'
 import {
   HomeFilled,
-  UserFilled,
   Money,
-  TrendCharts,
+  Collection,
+  Wallet,
+  Flag,
   Refresh
 } from '@element-plus/icons-vue'
 
@@ -70,11 +75,12 @@ const route = useRoute()
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
     '/': '首页',
-    '/students': '学生管理',
-    '/finance': '费用管理',
-    '/statistics': '统计报表'
+    '/transactions': '记账管理',
+    '/categories': '分类管理',
+    '/budget': '预算管理',
+    '/goals': '财务目标'
   }
-  return titles[route.path] || '学生管理系统'
+  return titles[route.path] || '个人财务管理系统'
 })
 
 const refreshData = () => {

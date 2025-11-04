@@ -416,7 +416,7 @@ const loadCharts = async () => {
     
     let majorData = statistics.value.by_major
     if (selectedGrade.value) {
-      majorData = majorData.filter(item => item.grade === selectedGrade.value)
+      majorData = majorData.filter((item: any) => item.grade === selectedGrade.value)
     }
     
     const chartData = majorData.map(item => ({
@@ -562,7 +562,7 @@ const loadCharts = async () => {
     
     let gradeData = statistics.value.by_grade
     if (selectedMajor.value) {
-      gradeData = gradeData.filter(item => item.major === selectedMajor.value)
+      gradeData = gradeData.filter((item: any) => item.major === selectedMajor.value)
     }
     
     const chartData = gradeData.map(item => ({

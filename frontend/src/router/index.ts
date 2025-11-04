@@ -1,5 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '@/components/Layout.vue'
+import HomeView from '@/views/HomeView.vue'
+import TransactionsView from '@/views/TransactionsView.vue'
+import CategoriesView from '@/views/CategoriesView.vue'
+import BudgetView from '@/views/BudgetView.vue'
+import GoalsView from '@/views/GoalsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,22 +16,27 @@ const router = createRouter({
         {
           path: '',
           name: 'home',
-          component: () => import('@/views/HomeView.vue'),
+          component: HomeView,
         },
         {
-          path: '/students',
-          name: 'students',
-          component: () => import('@/views/StudentsView.vue'),
+          path: '/transactions',
+          name: 'transactions',
+          component: TransactionsView,
         },
         {
-          path: '/finance',
-          name: 'finance',
-          component: () => import('@/views/FinanceView.vue'),
+          path: '/categories',
+          name: 'categories',
+          component: CategoriesView,
         },
         {
-          path: '/statistics',
-          name: 'statistics',
-          component: () => import('@/views/StatisticsView.vue'),
+          path: '/budget',
+          name: 'budget',
+          component: BudgetView,
+        },
+        {
+          path: '/goals',
+          name: 'goals',
+          component: GoalsView,
         },
       ],
     },

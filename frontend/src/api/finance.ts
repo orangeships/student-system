@@ -90,7 +90,7 @@ export const financeApi = {
     return api.post('/finance/records/', data)
   },
 
-  updateFeeRecord(id: number, data: FeeRecord) {
+  updateFeeRecord(id: number, data: Partial<FeeRecord>) {
     return api.put(`/finance/records/${id}/`, data)
   },
 
@@ -116,7 +116,7 @@ export const financeApi = {
   },
 
   // 统计信息
-  getPaymentStatistics() {
-    return api.get('/finance/records/statistics/')
+  getPaymentStatistics(params?: any) {
+    return api.get('/finance/records/statistics/', { params })
   },
 }

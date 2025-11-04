@@ -83,20 +83,25 @@ describe('Layout Component', () => {
       await wrapper.vm.$nextTick()
       expect(wrapper.vm.pageTitle).toBe('首页')
 
-      // 测试学生管理页面
-      wrapper = await createWrapper('/students')
+      // 测试记账管理页面
+      wrapper = await createWrapper('/transactions')
       await wrapper.vm.$nextTick()
-      expect(wrapper.vm.pageTitle).toBe('学生管理')
+      expect(wrapper.vm.pageTitle).toBe('记账管理')
 
-      // 测试费用管理页面
-      wrapper = await createWrapper('/finance')
+      // 测试分类管理页面
+      wrapper = await createWrapper('/categories')
       await wrapper.vm.$nextTick()
-      expect(wrapper.vm.pageTitle).toBe('费用管理')
+      expect(wrapper.vm.pageTitle).toBe('分类管理')
 
-      // 测试统计报表页面
-      wrapper = await createWrapper('/statistics')
+      // 测试预算管理页面
+      wrapper = await createWrapper('/budget')
       await wrapper.vm.$nextTick()
-      expect(wrapper.vm.pageTitle).toBe('统计报表')
+      expect(wrapper.vm.pageTitle).toBe('预算管理')
+
+      // 测试财务目标页面
+      wrapper = await createWrapper('/goals')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.pageTitle).toBe('财务目标')
     })
 
     it('should handle unknown routes', async () => {
@@ -105,11 +110,7 @@ describe('Layout Component', () => {
       // 检查实际的路由路径
       const actualPath = wrapper.vm.$route.path
       // 如果路由被重定向或处理，可能需要调整预期
-      if (actualPath === '/students') {
-        expect(wrapper.vm.pageTitle).toBe('学生管理')
-      } else {
-        expect(wrapper.vm.pageTitle).toBe('学生管理系统')
-      }
+      expect(wrapper.vm.pageTitle).toBe('个人财务管理系统')
     })
   })
 

@@ -77,7 +77,8 @@ export const useStudentStore = defineStore('student', () => {
       async () => {
         loading.value = true
         error.value = null
-        const updatedStudent = await studentApi.updateStudent(id, studentData)
+        const response = await studentApi.updateStudent(id, studentData)
+        const updatedStudent = response
         const index = students.value.findIndex(s => s.id === id)
         if (index !== -1) {
           students.value[index] = updatedStudent
@@ -150,12 +151,13 @@ export const useStudentStore = defineStore('student', () => {
   }
 
   // 更新学生状态
-  const updateStudentStatus = async (id: number, status: string) => {
+  const updateStudentStatus = async (id: number, status: 'active' | 'inactive' | 'graduated') => {
     return handleRequest(
       async () => {
         loading.value = true
         error.value = null
-        const updatedStudent = await studentApi.updateStudent(id, { status })
+        const response = await studentApi.updateStudent(id, { status })
+        const updatedStudent = response
         const index = students.value.findIndex(s => s.id === id)
         if (index !== -1) {
           students.value[index] = updatedStudent

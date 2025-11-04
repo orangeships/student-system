@@ -118,7 +118,7 @@
             <el-button 
               size="small" 
               @click="toggleDensity"
-              :icon="density === 'default' ? Expand : Compress"
+              :icon="density === 'default' ? Expand : Remove"
             >
               {{ density === 'default' ? '紧凑' : '默认' }}
             </el-button>
@@ -386,14 +386,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
-import { ElMessageBox } from 'element-plus'
+import { ref, reactive, onMounted } from 'vue'
 import { showSuccess, showError, showInfo } from '@/utils/message'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useStudentStore } from '@/stores/student'
 import type { Student } from '@/api/student'
-import { Plus, Edit, Delete, Search, Refresh, CircleCheck, CircleClose, User, Download, Phone, Message, Expand, Compress } from '@element-plus/icons-vue'
-import { showConfirm, showSuccess, showError } from '@/utils/message'
+import { Plus, Edit, Delete, Search, Refresh, User, Download, Phone, Message, Expand, Remove } from '@element-plus/icons-vue'
+import { showConfirm } from '@/utils/message'
 
 const studentStore = useStudentStore()
 
@@ -415,7 +414,7 @@ const density = ref<'default' | 'compact'>('default')
 const selectedStudents = ref<Student[]>([])
 
 // 搜索防抖
-let searchTimer: NodeJS.Timeout | null = null
+let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 // 搜索输入防抖
 const handleSearchInput = () => {
@@ -437,7 +436,7 @@ const toggleDensity = () => {
 }
 
 // 刷新数据
-const refreshData = async () => {
+const handleRefresh = async () => {
   try {
     await studentStore.fetchStudents()
     showSuccess('数据已刷新')
@@ -459,12 +458,6 @@ const handleMajorClick = (major: string) => {
   showInfo(`已筛选专业：${major}`)
 }
 
-// 查看详情
-const handleViewDetail = (row: Student) => {
-  // 这里可以跳转到学生详情页面，或者打开详情对话框
-  showInfo(`查看 ${row.name} 的详细信息`)
-}
-
 // 拨打电话
 const handleCallPhone = (phone: string) => {
   window.open(`tel:${phone}`)
@@ -480,7 +473,7 @@ const handleSendEmail = (email: string) => {
 // 状态变更
 const handleStatusChange = async (row: Student) => {
   try {
-    await studentStore.updateStudentStatus(row.id, row.status)
+    await studentStore.updateStudentStatus(row.id!, row.status)
   } catch (error) {
     // 恢复原始状态
     row.status = row.status === 'active' ? 'inactive' : 'active'
@@ -507,7 +500,7 @@ const handleBatchDelete = async () => {
   )
   
   if (confirmed) {
-    await studentStore.batchDeleteStudents(selectedStudents.value.map(s => s.id))
+    await studentStore.batchDeleteStudents(selectedStudents.value.map(s => s.id!).filter(id => id !== undefined))
     selectedStudents.value = []
     await studentStore.fetchStudents()
   }
@@ -534,7 +527,7 @@ const handleExport = () => {
     
     const csvContent = 'data:text/csv;charset=utf-8,' + 
       '\uFEFF' + // BOM for Excel UTF-8
-      Object.keys(data[0]).join(',') + '\n' +
+      (data.length > 0 ? Object.keys(data[0]!).join(',') + '\n' : '') +
       data.map(row => Object.values(row).join(',')).join('\n')
     
     const link = document.createElement('a')
@@ -582,23 +575,23 @@ const studentRules: FormRules = {
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 }
 
-const getStatusType = (status: string) => {
-  const types: Record<string, string> = {
-    active: 'success',
-    inactive: 'warning',
-    graduated: 'info',
-  }
-  return types[status] || 'info'
-}
+// const getStatusType = (status: string) => {
+//   const types: Record<string, string> = {
+//     active: 'success',
+//     inactive: 'warning',
+//     graduated: 'info',
+//   }
+//   return types[status] || 'info'
+// }
 
-const getStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    active: '在读',
-    inactive: '休学',
-    graduated: '毕业',
-  }
-  return labels[status] || status
-}
+// const getStatusLabel = (status: string) => {
+//   const labels: Record<string, string> = {
+//     active: '在读',
+//     inactive: '休学',
+//     graduated: '毕业',
+//   }
+//   return labels[status] || status
+// }
 
 const handleSearch = () => {
   studentStore.fetchStudents(searchForm)
