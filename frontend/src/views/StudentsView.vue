@@ -25,25 +25,57 @@
             clearable
             @clear="handleSearch"
             @keyup.enter="handleSearch"
-          />
+            @input="handleSearchInput"
+            style="width: 200px"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="全部" clearable @change="handleSearch">
+          <el-select 
+            v-model="searchForm.status" 
+            placeholder="全部" 
+            clearable 
+            @change="handleSearch"
+            style="width: 120px"
+          >
             <el-option label="在读" value="active" />
             <el-option label="休学" value="inactive" />
             <el-option label="毕业" value="graduated" />
           </el-select>
         </el-form-item>
         <el-form-item label="专业">
-          <el-select v-model="searchForm.major" placeholder="全部" clearable @change="handleSearch">
+          <el-select 
+            v-model="searchForm.major" 
+            placeholder="全部" 
+            clearable 
+            @change="handleSearch"
+            style="width: 140px"
+          >
             <el-option label="计算机科学" value="计算机科学" />
             <el-option label="软件工程" value="软件工程" />
             <el-option label="信息管理" value="信息管理" />
             <el-option label="电子商务" value="电子商务" />
           </el-select>
         </el-form-item>
+        <el-form-item label="年级">
+          <el-select 
+            v-model="searchForm.grade" 
+            placeholder="全部" 
+            clearable 
+            @change="handleSearch"
+            style="width: 100px"
+          >
+            <el-option label="大一" value="大一" />
+            <el-option label="大二" value="大二" />
+            <el-option label="大三" value="大三" />
+            <el-option label="大四" value="大四" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">
+          <el-button type="primary" @click="handleSearch" :loading="studentStore.loading">
             <el-icon><Search /></el-icon>
             搜索
           </el-button>
@@ -51,81 +83,131 @@
             <el-icon><Refresh /></el-icon>
             重置
           </el-button>
+          <el-button @click="handleExport" :icon="Download">
+            导出
+          </el-button>
         </el-form-item>
       </el-form>
 
       <!-- 学生列表 -->
       <div class="table-section">
+        <div class="table-toolbar">
+          <div class="toolbar-left">
+            <el-tag type="info" size="small">
+              已选择 {{ selectedStudents.length }} 项
+            </el-tag>
+            <el-button 
+              v-if="selectedStudents.length > 0"
+              type="danger" 
+              size="small" 
+              @click="handleBatchDelete"
+              :icon="Delete"
+            >
+              批量删除
+            </el-button>
+          </div>
+          <div class="toolbar-right">
+            <el-button 
+              size="small" 
+              @click="handleRefresh"
+              :loading="studentStore.loading"
+              :icon="Refresh"
+            >
+              刷新
+            </el-button>
+            <el-button 
+              size="small" 
+              @click="toggleDensity"
+              :icon="density === 'default' ? Expand : Compress"
+            >
+              {{ density === 'default' ? '紧凑' : '默认' }}
+            </el-button>
+          </div>
+        </div>
         <el-table
           v-loading="studentStore.loading"
           :data="studentStore.students"
           style="width: 100%"
           stripe
           :header-cell-style="{ background: '#fafafa', fontWeight: '600', color: '#262626' }"
+          @selection-change="handleSelectionChange"
+          :size="density === 'compact' ? 'small' : 'default'"
+          row-key="id"
         >
-          <el-table-column prop="student_id" label="学号" width="120" fixed="left">
+          <el-table-column type="selection" width="55" fixed="left" />
+          <el-table-column prop="id" label="ID" width="80" align="center" />
+          <el-table-column prop="student_id" label="学号" width="120" fixed="left" sortable="custom">
             <template #default="{ row }">
-              <span class="student-id">{{ row.student_id }}</span>
+              <span class="student-id" @click="handleViewDetail(row)" style="cursor: pointer; color: #1890ff;">
+                {{ row.student_id }}
+              </span>
             </template>
           </el-table-column>
-          <el-table-column prop="name" label="姓名" width="100" fixed="left">
+          <el-table-column prop="name" label="姓名" width="100" fixed="left" sortable="custom">
             <template #default="{ row }">
               <div class="student-name">
                 <el-avatar :size="24" :style="{ backgroundColor: getAvatarColor(row.name) }">
                   {{ row.name.charAt(0) }}
                 </el-avatar>
-                <span class="name-text">{{ row.name }}</span>
+                <span class="name-text" @click="handleViewDetail(row)" style="cursor: pointer; color: #1890ff;">
+                  {{ row.name }}
+                </span>
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="gender" label="性别" width="60" align="center">
+          <el-table-column prop="gender" label="性别" width="60" align="center" sortable="custom">
             <template #default="{ row }">
               <el-tag :type="row.gender === 'M' ? 'primary' : 'danger'" size="small">
                 {{ row.gender === 'M' ? '男' : '女' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="major" label="专业" width="120" show-overflow-tooltip>
+          <el-table-column prop="major" label="专业" width="120" show-overflow-tooltip sortable="custom">
             <template #default="{ row }">
-              <el-tag type="info" size="small" effect="plain">{{ row.major }}</el-tag>
+              <el-tag type="info" size="small" effect="plain" style="cursor: pointer;" @click="handleMajorClick(row.major)">
+                {{ row.major }}
+              </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="grade" label="年级" width="80" align="center">
+          <el-table-column prop="grade" label="年级" width="80" align="center" sortable="custom">
             <template #default="{ row }">
               <span class="grade-text">{{ row.grade }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="class_name" label="班级" width="100" align="center">
+          <el-table-column prop="class_name" label="班级" width="100" align="center" sortable="custom">
             <template #default="{ row }">
               <span class="class-text">{{ row.class_name }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="phone" label="手机号" width="120">
             <template #default="{ row }">
-              <span class="phone-text">{{ row.phone }}</span>
+              <el-button type="primary" link size="small" @click="handleCallPhone(row.phone)">
+                <el-icon><Phone /></el-icon>
+                {{ row.phone }}
+              </el-button>
             </template>
           </el-table-column>
           <el-table-column prop="email" label="邮箱" width="180" show-overflow-tooltip>
             <template #default="{ row }">
-              <span class="email-text">{{ row.email }}</span>
+              <el-button type="primary" link size="small" @click="handleSendEmail(row.email)">
+                <el-icon><Message /></el-icon>
+                {{ row.email }}
+              </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="80" align="center" fixed="right">
+          <el-table-column prop="status" label="状态" width="80" align="center" fixed="right" sortable="custom">
             <template #default="{ row }">
-              <el-tag 
-                :type="getStatusType(row.status)"
-                size="small"
-                effect="dark"
-              >
-                <el-icon style="margin-right: 2px;">
-                  <CircleCheck v-if="row.status === 'active'" />
-                  <CircleClose v-else />
-                </el-icon>
-                {{ getStatusLabel(row.status) }}
-              </el-tag>
+              <el-switch
+                v-model="row.status"
+                active-value="active"
+                inactive-value="inactive"
+                active-color="#52c41a"
+                inactive-color="#d9d9d9"
+                @change="handleStatusChange(row)"
+              />
             </template>
           </el-table-column>
-          <el-table-column prop="enrollment_date" label="入学日期" width="120">
+          <el-table-column prop="enrollment_date" label="入学日期" width="120" sortable="custom">
             <template #default="{ row }">
               <span class="enrollment-date">{{ row.enrollment_date }}</span>
             </template>
@@ -304,24 +386,165 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { ElMessageBox } from 'element-plus'
+import { showSuccess, showError, showInfo } from '@/utils/message'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useStudentStore } from '@/stores/student'
 import type { Student } from '@/api/student'
-import { Plus, Edit, Delete, Search, Refresh, CircleCheck, CircleClose, User } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Search, Refresh, CircleCheck, CircleClose, User, Download, Phone, Message, Expand, Compress } from '@element-plus/icons-vue'
+import { showConfirm, showSuccess, showError } from '@/utils/message'
 
 const studentStore = useStudentStore()
 
 const showAddDialog = ref(false)
 const studentFormRef = ref<FormInstance>()
 const editingStudent = ref<Student | null>(null)
-
+// 搜索表单
 const searchForm = reactive({
   search: '',
   status: '',
   major: '',
+  grade: ''
 })
+
+// 表格密度
+const density = ref<'default' | 'compact'>('default')
+
+// 选中的学生
+const selectedStudents = ref<Student[]>([])
+
+// 搜索防抖
+let searchTimer: NodeJS.Timeout | null = null
+
+// 搜索输入防抖
+const handleSearchInput = () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    handleSearch()
+  }, 500)
+}
+
+// 表格选择变化
+const handleSelectionChange = (selection: Student[]) => {
+  selectedStudents.value = selection
+}
+
+// 切换表格密度
+const toggleDensity = () => {
+  density.value = density.value === 'default' ? 'compact' : 'default'
+  showSuccess(`已切换到${density.value === 'compact' ? '紧凑' : '默认'}模式`)
+}
+
+// 刷新数据
+const refreshData = async () => {
+  try {
+    await studentStore.fetchStudents()
+    showSuccess('数据已刷新')
+  } catch (error) {
+    showError('刷新失败')
+  }
+}
+
+// 查看学生详情
+const handleViewDetail = (row: Student) => {
+  // 这里可以跳转到学生详情页面，或者打开详情对话框
+  showInfo(`查看 ${row.name} 的详细信息`)
+}
+
+// 点击专业标签
+const handleMajorClick = (major: string) => {
+  searchForm.major = major
+  handleSearch()
+  showInfo(`已筛选专业：${major}`)
+}
+
+// 查看详情
+const handleViewDetail = (row: Student) => {
+  // 这里可以跳转到学生详情页面，或者打开详情对话框
+  showInfo(`查看 ${row.name} 的详细信息`)
+}
+
+// 拨打电话
+const handleCallPhone = (phone: string) => {
+  window.open(`tel:${phone}`)
+  showInfo(`正在拨打电话：${phone}`)
+}
+
+// 发送邮件
+const handleSendEmail = (email: string) => {
+  window.open(`mailto:${email}`)
+  showInfo(`正在打开发送邮件：${email}`)
+}
+
+// 状态变更
+const handleStatusChange = async (row: Student) => {
+  try {
+    await studentStore.updateStudentStatus(row.id, row.status)
+  } catch (error) {
+    // 恢复原始状态
+    row.status = row.status === 'active' ? 'inactive' : 'active'
+  }
+}
+
+// 批量删除
+const handleBatchDelete = async () => {
+  if (selectedStudents.value.length === 0) {
+    showError('请选择要删除的学生')
+    return
+  }
+  
+  const names = selectedStudents.value.map(s => s.name).join(', ')
+  
+  const confirmed = await showConfirm(
+    `确定要删除选中的 ${selectedStudents.value.length} 名学生吗？\n\n${names}`,
+    '批量删除确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  )
+  
+  if (confirmed) {
+    await studentStore.batchDeleteStudents(selectedStudents.value.map(s => s.id))
+    selectedStudents.value = []
+    await studentStore.fetchStudents()
+  }
+}
+
+// 导出数据
+const handleExport = () => {
+  showInfo('正在导出学生数据...')
+  
+  // 模拟导出功能
+  setTimeout(() => {
+    const data = studentStore.students.map(student => ({
+      学号: student.student_id,
+      姓名: student.name,
+      性别: student.gender === 'M' ? '男' : '女',
+      专业: student.major,
+      年级: student.grade,
+      班级: student.class_name,
+      手机号: student.phone,
+      邮箱: student.email,
+      状态: student.status === 'active' ? '在读' : '休学',
+      入学日期: student.enrollment_date
+    }))
+    
+    const csvContent = 'data:text/csv;charset=utf-8,' + 
+      '\uFEFF' + // BOM for Excel UTF-8
+      Object.keys(data[0]).join(',') + '\n' +
+      data.map(row => Object.values(row).join(',')).join('\n')
+    
+    const link = document.createElement('a')
+    link.href = encodeURI(csvContent)
+    link.download = `学生数据_${new Date().toLocaleDateString()}.csv`
+    link.click()
+    
+    showSuccess('导出成功')
+  }, 1000)
+}
 
 const studentForm = reactive<Student>({
   student_id: '',
@@ -403,23 +626,18 @@ const handleEdit = (row: Student) => {
 }
 
 const handleDelete = async (row: Student) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除学生 "${row.name}" 吗？`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    )
-    
-    await studentStore.deleteStudent(row.id!)
-    ElMessage.success('删除成功')
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+  const confirmed = await showConfirm(
+    `确定要删除学生 "${row.name}" 吗？`,
+    '删除确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
     }
+  )
+  
+  if (confirmed) {
+    await studentStore.deleteStudent(row.id!)
   }
 }
 
@@ -431,16 +649,14 @@ const handleSubmit = async () => {
     
     if (editingStudent.value) {
       await studentStore.updateStudent(editingStudent.value.id!, studentForm)
-      ElMessage.success('更新成功')
     } else {
       await studentStore.createStudent(studentForm)
-      ElMessage.success('创建成功')
     }
     
     showAddDialog.value = false
     resetForm()
   } catch (error) {
-    ElMessage.error('操作失败')
+    showError('表单验证失败')
   }
 }
 
@@ -517,7 +733,24 @@ onMounted(() => {
 }
 
 .search-form {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #fafafa;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-form .el-form-item {
   margin-bottom: 0;
+  margin-right: 0;
+}
+
+.search-form .el-form-item__label {
+  font-weight: 500;
+  color: #595959;
 }
 
 .search-buttons {
@@ -529,6 +762,29 @@ onMounted(() => {
   background-color: #fff;
   border-radius: 8px;
   overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .students-table {

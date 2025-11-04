@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Student, StudentStatistics } from '@/api/student'
 import { studentApi } from '@/api/student'
+import { handleRequest } from '@/utils/message'
 
 export const useStudentStore = defineStore('student', () => {
   const students = ref<Student[]>([])
@@ -28,6 +29,7 @@ export const useStudentStore = defineStore('student', () => {
     } catch (err: any) {
       error.value = err.message || '获取学生列表失败'
       console.error('获取学生列表失败:', err)
+      throw err
     } finally {
       loading.value = false
     }
@@ -50,53 +52,84 @@ export const useStudentStore = defineStore('student', () => {
   }
 
   // 创建学生
-  const createStudent = async (data: Student) => {
-    loading.value = true
-    error.value = null
-    try {
-      const student = await studentApi.createStudent(data)
-      await fetchStudents()
-      return student
-    } catch (err: any) {
-      error.value = err.message || '创建学生失败'
-      console.error('创建学生失败:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
+  const createStudent = async (studentData: Omit<Student, 'id'>) => {
+    return handleRequest(
+      async () => {
+        loading.value = true
+        error.value = null
+        const newStudent = await studentApi.createStudent(studentData)
+        await fetchStudents()
+        return newStudent
+      },
+      {
+        success: '学生创建成功',
+        error: '创建学生失败',
+        finally: () => {
+          loading.value = false
+        }
+      }
+    )
   }
 
   // 更新学生
-  const updateStudent = async (id: number, data: Student) => {
-    loading.value = true
-    error.value = null
-    try {
-      const student = await studentApi.updateStudent(id, data)
-      await fetchStudents()
-      return student
-    } catch (err: any) {
-      error.value = err.message || '更新学生失败'
-      console.error('更新学生失败:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
+  const updateStudent = async (id: number, studentData: Partial<Student>) => {
+    return handleRequest(
+      async () => {
+        loading.value = true
+        error.value = null
+        const updatedStudent = await studentApi.updateStudent(id, studentData)
+        const index = students.value.findIndex(s => s.id === id)
+        if (index !== -1) {
+          students.value[index] = updatedStudent
+        }
+        return updatedStudent
+      },
+      {
+        success: '学生更新成功',
+        error: '更新学生失败',
+        finally: () => {
+          loading.value = false
+        }
+      }
+    )
   }
 
   // 删除学生
   const deleteStudent = async (id: number) => {
-    loading.value = true
-    error.value = null
-    try {
-      await studentApi.deleteStudent(id)
-      await fetchStudents()
-    } catch (err: any) {
-      error.value = err.message || '删除学生失败'
-      console.error('删除学生失败:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
+    return handleRequest(
+      async () => {
+        loading.value = true
+        error.value = null
+        await studentApi.deleteStudent(id)
+        await fetchStudents()
+      },
+      {
+        success: '学生删除成功',
+        error: '删除学生失败',
+        finally: () => {
+          loading.value = false
+        }
+      }
+    )
+  }
+
+  // 批量删除学生
+  const batchDeleteStudents = async (ids: number[]) => {
+    return handleRequest(
+      async () => {
+        loading.value = true
+        error.value = null
+        await Promise.all(ids.map(id => studentApi.deleteStudent(id)))
+        await fetchStudents()
+      },
+      {
+        success: '批量删除学生成功',
+        error: '批量删除学生失败',
+        finally: () => {
+          loading.value = false
+        }
+      }
+    )
   }
 
   // 获取统计信息
@@ -104,9 +137,9 @@ export const useStudentStore = defineStore('student', () => {
     loading.value = true
     error.value = null
     try {
-      const stats = await studentApi.getStatistics() as unknown as StudentStatistics
-      statistics.value = stats
-      return stats
+      const response = await studentApi.getStatistics()
+      statistics.value = response
+      return response
     } catch (err: any) {
       error.value = err.message || '获取统计信息失败'
       console.error('获取统计信息失败:', err)
@@ -114,6 +147,29 @@ export const useStudentStore = defineStore('student', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  // 更新学生状态
+  const updateStudentStatus = async (id: number, status: string) => {
+    return handleRequest(
+      async () => {
+        loading.value = true
+        error.value = null
+        const updatedStudent = await studentApi.updateStudent(id, { status })
+        const index = students.value.findIndex(s => s.id === id)
+        if (index !== -1) {
+          students.value[index] = updatedStudent
+        }
+        return updatedStudent
+      },
+      {
+        success: '学生状态更新成功',
+        error: '更新学生状态失败',
+        finally: () => {
+          loading.value = false
+        }
+      }
+    )
   }
 
   // 分页相关
@@ -141,7 +197,9 @@ export const useStudentStore = defineStore('student', () => {
     createStudent,
     updateStudent,
     deleteStudent,
+    batchDeleteStudents,
     fetchStatistics,
+    updateStudentStatus,
     setPage,
     setPageSize,
   }

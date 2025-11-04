@@ -56,7 +56,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { showSuccess } from '@/utils/message'
 import {
   HomeFilled,
   UserFilled,
@@ -80,7 +80,7 @@ const pageTitle = computed(() => {
 const refreshData = () => {
   // 触发数据刷新事件
   window.dispatchEvent(new CustomEvent('refresh-data'))
-  ElMessage.success('数据已刷新')
+  showSuccess('数据已刷新')
 }
 </script>
 

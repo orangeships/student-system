@@ -36,6 +36,7 @@ export interface StudentStatistics {
   graduated_students: number
   by_major: Array<{ major: string; count: number }>
   by_grade: Array<{ grade: string; count: number }>
+  by_gender?: Array<{ gender: 'M' | 'F'; count: number }>
 }
 
 export const studentApi = {

@@ -86,22 +86,62 @@
         </el-col>
       </el-row>
 
+      <!-- 图表工具栏 -->
+      <div class="chart-toolbar">
+        <div class="toolbar-left">
+          <el-button @click="refreshCharts" :icon="Refresh" :loading="loading">
+            刷新数据
+          </el-button>
+          <el-button @click="toggleChartType" :icon="Switch">
+            {{ chartType === 'pie' ? '切换柱状图' : '切换饼图' }}
+          </el-button>
+        </div>
+        <div class="toolbar-right">
+          <el-select v-model="selectedMajor" placeholder="筛选专业" clearable @change="filterByMajor" style="width: 150px">
+            <el-option
+              v-for="major in availableMajors"
+              :key="major"
+              :label="major"
+              :value="major"
+            />
+          </el-select>
+          <el-select v-model="selectedGrade" placeholder="筛选年级" clearable @change="filterByGrade" style="width: 120px">
+            <el-option
+              v-for="grade in availableGrades"
+              :key="grade"
+              :label="grade"
+              :value="grade"
+            />
+          </el-select>
+        </div>
+      </div>
+
       <!-- 图表区域 -->
       <el-row :gutter="20" class="charts-row">
         <el-col :span="12">
           <el-card>
             <template #header>
-              <span>学生专业分布</span>
+              <div class="chart-header">
+                <span>学生专业分布</span>
+                <el-button link @click="downloadChart('major')" :icon="Download">
+                  下载
+                </el-button>
+              </div>
             </template>
-            <div ref="majorChartRef" class="chart-container"></div>
+            <div ref="majorChartRef" class="chart-container" @click="handleChartClick"></div>
           </el-card>
         </el-col>
         <el-col :span="12">
           <el-card>
             <template #header>
-              <span>月度收入趋势</span>
+              <div class="chart-header">
+                <span>月度收入趋势</span>
+                <el-button link @click="downloadChart('income')" :icon="Download">
+                  下载
+                </el-button>
+              </div>
             </template>
-            <div ref="incomeChartRef" class="chart-container"></div>
+            <div ref="incomeChartRef" class="chart-container" @click="handleChartClick"></div>
           </el-card>
         </el-col>
       </el-row>
@@ -110,17 +150,27 @@
         <el-col :span="12">
           <el-card>
             <template #header>
-              <span>缴费状态分布</span>
+              <div class="chart-header">
+                <span>缴费状态分布</span>
+                <el-button link @click="downloadChart('payment')" :icon="Download">
+                  下载
+                </el-button>
+              </div>
             </template>
-            <div ref="paymentStatusChartRef" class="chart-container"></div>
+            <div ref="paymentStatusChartRef" class="chart-container" @click="handleChartClick"></div>
           </el-card>
         </el-col>
         <el-col :span="12">
           <el-card>
             <template #header>
-              <span>年级分布</span>
+              <div class="chart-header">
+                <span>年级分布</span>
+                <el-button link @click="downloadChart('grade')" :icon="Download">
+                  下载
+                </el-button>
+              </div>
             </template>
-            <div ref="gradeChartRef" class="chart-container"></div>
+            <div ref="gradeChartRef" class="chart-container" @click="handleChartClick"></div>
           </el-card>
         </el-col>
       </el-row>
@@ -176,6 +226,8 @@ import { useStudentStore } from '@/stores/student'
 import { useFinanceStore } from '@/stores/finance'
 import type { StudentStatistics } from '@/api/student'
 import type { FeeRecord } from '@/api/finance'
+import { showSuccess, showError, showInfo } from '@/utils/message'
+import { Refresh, Switch, Download } from '@element-plus/icons-vue'
 
 const studentStore = useStudentStore()
 const financeStore = useFinanceStore()
@@ -191,6 +243,13 @@ const statistics = ref<StudentStatistics>({
 })
 
 const tableData = ref<any[]>([])
+
+const loading = ref(false)
+const chartType = ref<'pie' | 'bar'>('pie')
+const selectedMajor = ref<string>('')
+const selectedGrade = ref<string>('')
+const availableMajors = ref<string[]>([])
+const availableGrades = ref<string[]>([])
 
 const majorChartRef = ref<HTMLElement>()
 const incomeChartRef = ref<HTMLElement>()
@@ -249,6 +308,89 @@ const calculateStudentsGrowth = () => {
 
 const handleDateChange = () => {
   loadStatistics()
+  loadCharts()
+  loadTableData()
+}
+
+const refreshCharts = async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      studentStore.fetchStudents(),
+      financeStore.fetchFeeRecords()
+    ])
+    loadStatistics()
+    loadCharts()
+    loadTableData()
+    showSuccess('数据刷新成功')
+  } catch (error) {
+    showError('数据刷新失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const toggleChartType = () => {
+  chartType.value = chartType.value === 'pie' ? 'bar' : 'pie'
+  loadCharts()
+}
+
+const filterByMajor = () => {
+  loadCharts()
+  loadTableData()
+}
+
+const filterByGrade = () => {
+  loadCharts()
+  loadTableData()
+}
+
+const downloadChart = (chartName: string) => {
+  let chartInstance: echarts.ECharts | null = null
+  let fileName = ''
+  
+  switch (chartName) {
+    case 'major':
+      chartInstance = majorChart
+      fileName = '专业分布图表'
+      break
+    case 'income':
+      chartInstance = incomeChart
+      fileName = '月度收入趋势'
+      break
+    case 'payment':
+      chartInstance = paymentStatusChart
+      fileName = '缴费状态分布'
+      break
+    case 'grade':
+      chartInstance = gradeChart
+      fileName = '年级分布图表'
+      break
+  }
+  
+  if (chartInstance) {
+    const url = chartInstance.getDataURL({
+      type: 'png',
+      pixelRatio: 2,
+      backgroundColor: '#fff'
+    })
+    
+    const link = document.createElement('a')
+    link.download = `${fileName}.png`
+    link.href = url
+    link.click()
+    
+    showSuccess('图表下载成功')
+  }
+}
+
+const handleChartClick = (params: any) => {
+  if (params.componentType === 'series') {
+    const name = params.name
+    if (name) {
+      showInfo(`点击了: ${name}`)
+    }
+  }
 }
 
 const loadStatistics = async () => {
@@ -268,36 +410,51 @@ const loadStatistics = async () => {
 const loadCharts = async () => {
   // 专业分布图表
   if (majorChartRef.value) {
-    majorChart = echarts.init(majorChartRef.value)
-    const majorData = studentStore.students.reduce((acc, student) => {
-      acc[student.major] = (acc[student.major] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    if (!majorChart) {
+      majorChart = echarts.init(majorChartRef.value)
+    }
     
-    majorChart.setOption({
+    let majorData = statistics.value.by_major
+    if (selectedGrade.value) {
+      majorData = majorData.filter(item => item.grade === selectedGrade.value)
+    }
+    
+    const chartData = majorData.map(item => ({
+      name: item.major,
+      value: item.count
+    }))
+    
+    const majorOption = {
+      title: {
+        text: '专业分布统计',
+        left: 'center'
+      },
       tooltip: {
         trigger: 'item',
+        formatter: '{a} <br/>{b}: {c} ({d}%)'
       },
       legend: {
         orient: 'vertical',
-        left: 'left',
+        left: 'left'
       },
       series: [
         {
-          name: '学生数',
-          type: 'pie',
-          radius: '50%',
-          data: Object.entries(majorData).map(([name, value]) => ({ name, value })),
+          name: '专业人数',
+          type: chartType.value,
+          radius: chartType.value === 'pie' ? '50%' : undefined,
+          data: chartData,
           emphasis: {
             itemStyle: {
               shadowBlur: 10,
               shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)',
-            },
-          },
-        },
-      ],
-    })
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          }
+        }
+      ]
+    }
+    
+    majorChart.setOption(majorOption)
   }
   
   // 月度收入趋势图表
@@ -399,49 +556,68 @@ const loadCharts = async () => {
   
   // 年级分布图表
   if (gradeChartRef.value) {
-    gradeChart = echarts.init(gradeChartRef.value)
-    const gradeData = studentStore.students.reduce((acc, student) => {
-      acc[student.grade] = (acc[student.grade] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    if (!gradeChart) {
+      gradeChart = echarts.init(gradeChartRef.value)
+    }
     
-    gradeChart.setOption({
+    let gradeData = statistics.value.by_grade
+    if (selectedMajor.value) {
+      gradeData = gradeData.filter(item => item.major === selectedMajor.value)
+    }
+    
+    const chartData = gradeData.map(item => ({
+      name: item.grade,
+      value: item.count
+    }))
+    
+    const gradeOption = {
+      title: {
+        text: '年级分布统计',
+        left: 'center'
+      },
       tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'shadow',
-        },
+        trigger: 'item',
+        formatter: '{a} <br/>{b}: {c} ({d}%)'
       },
-      xAxis: {
-        type: 'category',
-        data: Object.keys(gradeData),
-      },
-      yAxis: {
-        type: 'value',
-        name: '学生数',
+      legend: {
+        orient: 'vertical',
+        left: 'left'
       },
       series: [
         {
-          name: '学生数',
-          type: 'bar',
-          data: Object.values(gradeData),
-          itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#83bff6' },
-              { offset: 0.5, color: '#188df0' },
-              { offset: 1, color: '#188df0' },
-            ]),
-          },
-        },
-      ],
-    })
+          name: '年级人数',
+          type: chartType.value,
+          radius: chartType.value === 'pie' ? '50%' : undefined,
+          data: chartData,
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          }
+        }
+      ]
+    }
+    
+    gradeChart.setOption(gradeOption)
   }
 }
 
 const loadTableData = () => {
   const majorGradeData: Record<string, any> = {}
-  
-  studentStore.students.forEach(student => {
+
+  let students = studentStore.students
+
+  if (selectedMajor.value) {
+    students = students.filter(student => student.major === selectedMajor.value)
+  }
+
+  if (selectedGrade.value) {
+    students = students.filter(student => student.grade === selectedGrade.value)
+  }
+
+  students.forEach(student => {
     const key = `${student.major}-${student.grade}`
     if (!majorGradeData[key]) {
       majorGradeData[key] = {
@@ -456,9 +632,9 @@ const loadTableData = () => {
     }
     majorGradeData[key].total_students++
   })
-  
+
   financeStore.feeRecords.forEach((record: FeeRecord) => {
-    const student = studentStore.students.find(s => s.id === record.student)
+    const student = students.find(s => s.id === record.student)
     if (student) {
       const key = `${student.major}-${student.grade}`
       if (majorGradeData[key]) {
@@ -470,22 +646,22 @@ const loadTableData = () => {
       }
     }
   })
-  
+
   Object.values(majorGradeData).forEach((item: any) => {
     const totalRecords = financeStore.feeRecords.filter((record: FeeRecord) => {
-      const student = studentStore.students.find(s => s.id === record.student)
+      const student = students.find(s => s.id === record.student)
       return student && student.major === item.major && student.grade === item.grade
     }).length
-    
+
     const paidRecords = financeStore.feeRecords.filter((record: FeeRecord) => {
-      const student = studentStore.students.find(s => s.id === record.student)
+      const student = students.find(s => s.id === record.student)
       return student && student.major === item.major && student.grade === item.grade && record.status === 'paid'
     }).length
-    
+
     item.paid_rate = totalRecords > 0 ? paidRecords / totalRecords : 0
     item.avg_income = item.total_students > 0 ? item.total_income / item.total_students : 0
   })
-  
+
   tableData.value = Object.values(majorGradeData)
 }
 
@@ -517,10 +693,21 @@ const exportData = () => {
   link.click()
 }
 
+const initFilterOptions = () => {
+  // 初始化专业选项
+  const majors = new Set(studentStore.students.map(student => student.major))
+  availableMajors.value = Array.from(majors).sort()
+  
+  // 初始化年级选项
+  const grades = new Set(studentStore.students.map(student => student.grade))
+  availableGrades.value = Array.from(grades).sort()
+}
+
 onMounted(async () => {
   await studentStore.fetchStudents()
   await financeStore.fetchFeeRecords()
   await loadStatistics()
+  initFilterOptions()
   
   window.addEventListener('resize', () => {
     majorChart?.resize()
@@ -636,5 +823,38 @@ onUnmounted(() => {
 
 .data-table-card {
   margin-top: 20px;
+}
+
+.chart-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px 20px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  border: 1px solid #e4e7ed;
+}
+
+.toolbar-left {
+  display: flex;
+  gap: 10px;
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-header span {
+  font-weight: 500;
+  color: #303133;
 }
 </style>

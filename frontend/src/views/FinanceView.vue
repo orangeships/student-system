@@ -26,6 +26,7 @@
               clearable
               @clear="handleSearch"
               @keyup.enter="handleSearch"
+              @input="handleSearchInput"
               :prefix-icon="Search"
             />
           </el-form-item>
@@ -124,17 +125,40 @@
 
       <!-- 缴费记录列表 -->
       <div class="table-section">
+        <div class="table-toolbar">
+          <div class="toolbar-left">
+            <el-button type="danger" :disabled="selectedRecords.length === 0" @click="handleBatchDelete" :icon="Delete">
+              批量删除
+            </el-button>
+            <el-button @click="handleExport" :icon="Download">
+              导出数据
+            </el-button>
+          </div>
+          <div class="toolbar-right">
+            <el-button @click="handleRefresh" :icon="Refresh" :loading="financeStore.loading">
+              刷新
+            </el-button>
+            <el-button @click="toggleDensity" :icon="tableSize === 'small' ? Expand : Compress">
+              {{ tableSize === 'small' ? '紧凑' : '宽松' }}
+            </el-button>
+          </div>
+        </div>
         <el-table
           v-loading="financeStore.loading"
           :data="financeStore.feeRecords"
           style="width: 100%"
           stripe
           border
+          :size="tableSize"
           :header-cell-style="{ background: '#f8f9fa', fontWeight: 'bold' }"
+          @selection-change="handleSelectionChange"
+          row-key="id"
         >
-          <el-table-column prop="student_name" label="学生姓名" width="120" fixed="left">
+          <el-table-column type="selection" width="55" fixed="left" />
+          <el-table-column prop="id" label="ID" width="80" align="center" />
+          <el-table-column prop="student_name" label="学生姓名" width="120" fixed="left" sortable="custom">
             <template #default="{ row }">
-              <div class="student-info">
+              <div class="student-info" @click="handleViewStudent(row)" style="cursor: pointer;">
                 <el-avatar :size="24" :style="{ backgroundColor: getAvatarColor(row.student_name) }">
                   {{ row.student_name.charAt(0) }}
                 </el-avatar>
@@ -142,40 +166,53 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="student_id" label="学号" width="120" />
-          <el-table-column prop="category_name" label="费用类别" width="120">
+          <el-table-column prop="student_id" label="学号" width="120" sortable="custom" />
+          <el-table-column prop="category_name" label="费用类别" width="120" sortable="custom">
             <template #default="{ row }">
-              <el-tag type="info" size="small">{{ row.category_name }}</el-tag>
+              <el-tag 
+                type="info" 
+                size="small" 
+                @click="handleCategoryClick(row.category_id)" 
+                style="cursor: pointer;"
+              >
+                {{ row.category_name }}
+              </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="amount" label="应缴金额" width="100" align="right">
+          <el-table-column prop="amount" label="应缴金额" width="100" align="right" sortable="custom">
             <template #default="{ row }">
               <span class="amount-due">¥{{ formatMoney(row.amount) }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="paid_amount" label="实缴金额" width="100" align="right">
+          <el-table-column prop="paid_amount" label="实缴金额" width="100" align="right" sortable="custom">
             <template #default="{ row }">
               <span class="amount-paid">¥{{ formatMoney(row.paid_amount) }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="缴费状态" width="100" align="center">
+          <el-table-column prop="status" label="缴费状态" width="100" align="center" sortable="custom">
             <template #default="{ row }">
-              <el-tag :type="getStatusType(row.status)" size="small">
-                <el-icon style="margin-right: 4px;">
-                  <CircleCheck v-if="row.status === 'paid'" />
-                  <CircleClose v-else-if="row.status === 'unpaid'" />
-                  <Warning v-else />
-                </el-icon>
-                {{ getStatusLabel(row.status) }}
-              </el-tag>
+              <el-switch
+                v-model="row.status"
+                :active-value="'paid'"
+                :inactive-value="'unpaid'"
+                @change="handleStatusChange(row)"
+                :disabled="row.status === 'partial'"
+              >
+                <template #active>
+                  <el-icon><CircleCheck /></el-icon>
+                </template>
+                <template #inactive>
+                  <el-icon><CircleClose /></el-icon>
+                </template>
+              </el-switch>
             </template>
           </el-table-column>
-          <el-table-column prop="due_date" label="应缴日期" width="120" align="center">
+          <el-table-column prop="due_date" label="应缴日期" width="120" align="center" sortable="custom">
             <template #default="{ row }">
               <span class="date-text">{{ row.due_date }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="payment_date" label="缴费日期" width="120" align="center">
+          <el-table-column prop="payment_date" label="缴费日期" width="120" align="center" sortable="custom">
             <template #default="{ row }">
               <span class="date-text">{{ row.payment_date || '-' }}</span>
             </template>
@@ -369,8 +406,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
+import { showConfirm, showSuccess, showError, showInfo } from '@/utils/message'
 import { useFinanceStore } from '@/stores/finance'
 import { useStudentStore } from '@/stores/student'
 import type { FeeRecord } from '@/api/finance'
@@ -386,9 +425,13 @@ import {
   Warning,
   TrendCharts,
   Document,
-  RefreshLeft
+  RefreshLeft,
+  Download,
+  Expand,
+  Compress
 } from '@element-plus/icons-vue'
 
+const router = useRouter()
 const financeStore = useFinanceStore()
 const studentStore = useStudentStore()
 
@@ -397,6 +440,10 @@ const showPaymentDialog = ref(false)
 const feeRecordFormRef = ref<FormInstance>()
 const paymentFormRef = ref<FormInstance>()
 const currentRecord = ref<FeeRecord | null>(null)
+
+const selectedRecords = ref<FeeRecord[]>([])
+const tableSize = ref<'default' | 'small'>('default')
+const searchTimer = ref<NodeJS.Timeout | null>(null)
 
 const searchForm = reactive({
   student_name: '',
@@ -486,12 +533,119 @@ const handleSearch = () => {
   financeStore.fetchFeeRecords(searchForm)
 }
 
+const handleSearchInput = () => {
+  if (searchTimer.value) {
+    clearTimeout(searchTimer.value)
+  }
+  searchTimer.value = setTimeout(() => {
+    handleSearch()
+  }, 500)
+}
+
 const handleReset = () => {
   searchForm.student_name = ''
   searchForm.category_id = ''
   searchForm.status = ''
   searchForm.date_range = []
   financeStore.fetchFeeRecords()
+}
+
+const handleSelectionChange = (selection: FeeRecord[]) => {
+  selectedRecords.value = selection
+}
+
+const handleRefresh = () => {
+  financeStore.fetchFeeRecords()
+}
+
+const toggleDensity = () => {
+  tableSize.value = tableSize.value === 'default' ? 'small' : 'default'
+}
+
+const handleViewStudent = (row: FeeRecord) => {
+  // 导航到学生详情页面
+  router.push({
+    name: 'student-detail',
+    params: { id: row.student },
+    query: { from: 'finance' }
+  })
+}
+
+const handleCategoryClick = (categoryId: number) => {
+  // 设置筛选条件并重新搜索
+  searchForm.category_id = categoryId
+  handleSearch()
+}
+
+const handleStatusChange = async (row: FeeRecord) => {
+  try {
+    const newStatus = row.status === 'paid' ? 'paid' : 'unpaid'
+    await financeStore.updateFeeRecord(row.id!, {
+      ...row,
+      status: newStatus,
+      paid_date: newStatus === 'paid' ? new Date().toISOString().split('T')[0] : undefined
+    })
+  } catch (error) {
+    // 恢复原状态
+    row.status = row.status === 'paid' ? 'unpaid' : 'paid'
+  }
+}
+
+const handleBatchDelete = async () => {
+  if (selectedRecords.value.length === 0) {
+    showError('请选择要删除的缴费记录')
+    return
+  }
+  
+  try {
+    await showConfirm(
+      `确定要删除选中的 ${selectedRecords.value.length} 条缴费记录吗？`,
+      '批量删除确认'
+    )
+    
+    // 批量删除逻辑
+    for (const record of selectedRecords.value) {
+      await financeStore.deleteFeeRecord(record.id!)
+    }
+    
+    selectedRecords.value = []
+    handleRefresh()
+  } catch (error) {
+    // 用户取消操作，不处理
+  }
+}
+
+const handleExport = () => {
+  showInfo('正在导出缴费记录数据...')
+  
+  // 导出数据逻辑
+  const exportData = financeStore.feeRecords.map(record => ({
+    '学生姓名': record.student_name,
+    '学号': record.student_id,
+    '费用类别': record.category_name,
+    '应缴金额': record.amount,
+    '实缴金额': record.paid_amount,
+    '缴费状态': getStatusLabel(record.status),
+    '应缴日期': record.due_date,
+    '缴费日期': record.payment_date || '-',
+    '描述': record.description || '-'
+  }))
+  
+  // 创建CSV内容
+  const headers = Object.keys(exportData[0])
+  const csvContent = [
+    headers.join(','),
+    ...exportData.map(row => headers.map(header => row[header as keyof typeof row]).join(','))
+  ].join('\n')
+  
+  // 下载文件
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `缴费记录_${new Date().toISOString().split('T')[0]}.csv`
+  link.click()
+  
+  showSuccess('数据导出成功')
 }
 
 const handleSizeChange = (size: number) => {
@@ -512,14 +666,9 @@ const handlePayment = (row: FeeRecord) => {
 
 const handleRefund = async (row: FeeRecord) => {
   try {
-    await ElMessageBox.confirm(
+    await showConfirm(
       `确定要为学生 "${row.student_name || '未知学生'}" 办理退款吗？`,
-      '退款确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
+      '退款确认'
     )
     
     await financeStore.createPayment({
@@ -529,33 +678,21 @@ const handleRefund = async (row: FeeRecord) => {
       payment_method: 'cash',
       notes: '管理员操作退款',
     })
-    
-    ElMessage.success('退款成功')
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('退款失败')
-    }
+    // 用户取消操作，不处理
   }
 }
 
 const handleDelete = async (row: FeeRecord) => {
   try {
-    await ElMessageBox.confirm(
+    await showConfirm(
       `确定要删除缴费记录吗？`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
+      '删除确认'
     )
     
     await financeStore.deleteFeeRecord(row.id!)
-    ElMessage.success('删除成功')
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
+    // 用户取消操作，不处理
   }
 }
 
@@ -572,11 +709,10 @@ const handleSubmit = async () => {
       status: feeRecordForm.status as 'pending' | 'paid' | 'overdue' | 'cancelled',
       notes: feeRecordForm.description,
     })
-    ElMessage.success('创建成功')
     showAddDialog.value = false
     resetFeeRecordForm()
   } catch (error) {
-    ElMessage.error('创建失败')
+    showError('表单验证失败')
   }
 }
 
@@ -596,10 +732,9 @@ const handlePaymentSubmit = async () => {
       notes: paymentForm.notes,
     })
     
-    ElMessage.success('缴费成功')
     showPaymentDialog.value = false
   } catch (error) {
-    ElMessage.error('缴费失败')
+    showError('表单验证失败')
   }
 }
 
@@ -738,6 +873,25 @@ onMounted(async () => {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.toolbar-left {
+  display: flex;
+  gap: 12px;
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 12px;
 }
 
 .student-info {
