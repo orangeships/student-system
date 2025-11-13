@@ -34,6 +34,10 @@
           <el-icon><Flag /></el-icon>
           <span>财务目标</span>
         </el-menu-item>
+        <el-menu-item index="/api-test" class="menu-item">
+          <el-icon><Tools /></el-icon>
+          <span>API测试</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     
@@ -46,6 +50,17 @@
               <el-icon><Refresh /></el-icon>
               刷新
             </el-button>
+            <el-dropdown @command="handleUserAction">
+              <el-button type="info" circle>
+                <el-icon><User /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="profile">个人资料</el-dropdown-item>
+                  <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </div>
       </el-header>
@@ -59,18 +74,24 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import { showSuccess } from '@/utils/message'
+import { useAuthStore } from '@/stores/auth'
 import {
   HomeFilled,
   Money,
   Collection,
   Wallet,
   Flag,
-  Refresh
+  Refresh,
+  User,
+  Tools
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
@@ -78,7 +99,8 @@ const pageTitle = computed(() => {
     '/transactions': '记账管理',
     '/categories': '分类管理',
     '/budget': '预算管理',
-    '/goals': '财务目标'
+    '/goals': '财务目标',
+    '/api-test': 'API测试'
   }
   return titles[route.path] || '个人财务管理系统'
 })
@@ -87,6 +109,25 @@ const refreshData = () => {
   // 触发数据刷新事件
   window.dispatchEvent(new CustomEvent('refresh-data'))
   showSuccess('数据已刷新')
+}
+
+const handleUserAction = (command: string) => {
+  switch (command) {
+    case 'profile':
+      // 跳转到个人资料页面
+      break
+    case 'logout':
+      ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        authStore.logout()
+        router.push('/login')
+        showSuccess('已退出登录')
+      })
+      break
+  }
 }
 </script>
 

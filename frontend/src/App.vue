@@ -1,5 +1,18 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+onMounted(() => {
+  // 检查本地存储的token，如果存在则验证用户认证状态
+  const token = localStorage.getItem('token')
+  if (token) {
+    // Token已存在，用户已认证，不需要额外操作
+    console.log('用户已登录，token存在')
+  }
+})
 </script>
 
 <template>

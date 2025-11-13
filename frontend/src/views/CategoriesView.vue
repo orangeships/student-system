@@ -216,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCategoryStore } from '@/stores/category'
 import type { Category, CategoryForm } from '@/types/category'
@@ -397,6 +397,11 @@ const showError = (message: string) => {
 
 // 监听数据刷新事件
 window.addEventListener('refresh-data', handleRefresh)
+
+// 组件卸载时清理事件监听器
+onUnmounted(() => {
+  window.removeEventListener('refresh-data', handleRefresh)
+})
 </script>
 
 <style scoped>

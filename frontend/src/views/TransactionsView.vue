@@ -10,9 +10,9 @@
               共 {{ transactionStore.totalCount }} 笔交易
             </el-tag>
           </div>
-          <el-button type="primary" @click="showAddDialog = true" :icon="Plus">
-            新增记账
-          </el-button>
+          <el-button type="primary" @click="handleAddNew" :icon="Plus">
+          新增记账
+        </el-button>
         </div>
       </template>
 
@@ -126,13 +126,14 @@
         </div>
         <el-table
           v-loading="transactionStore.loading"
-          :data="transactionStore.transactions"
+          :data="transactionStore.transactions || []"
           style="width: 100%"
           stripe
           :header-cell-style="{ background: '#fafafa', fontWeight: '600', color: '#262626' }"
           @selection-change="handleSelectionChange"
           :size="density === 'compact' ? 'small' : 'default'"
           row-key="id"
+          v-if="transactionStore.transactions"
         >
           <el-table-column type="selection" width="55" fixed="left" />
           <el-table-column prop="id" label="ID" width="80" align="center" />
@@ -230,14 +231,24 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="分类" prop="category">
-          <el-select v-model="transactionForm.category" placeholder="选择分类" style="width: 100%">
+          <el-select 
+            v-model="transactionForm.category" 
+            placeholder="选择分类" 
+            style="width: 100%"
+            clearable
+            filterable
+            :disabled="categories.length === 0"
+          >
             <el-option 
-              v-for="category in categories" 
+              v-for="category in categories || []" 
               :key="category.id" 
               :label="category.name" 
               :value="category.id"
             />
           </el-select>
+          <div v-if="categories.length === 0" style="color: #909399; font-size: 12px; margin-top: 5px;">
+            暂无分类，请先前往分类管理页面添加分类
+          </div>
         </el-form-item>
         <el-form-item label="金额" prop="amount">
           <el-input-number
@@ -280,7 +291,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTransactionStore } from '@/stores/transaction'
 import { useCategoryStore } from '@/stores/category'
@@ -335,13 +346,40 @@ const rules = {
   payment_method: [{ required: true, message: '请选择支付方式', trigger: 'change' }]
 }
 
-const categories = computed(() => categoryStore.categories)
+const categories = computed(() => {
+  const allCategories = categoryStore.categories || []
+  if (!transactionForm.transaction_type) {
+    return allCategories
+  }
+  return allCategories.filter(category => 
+    category.category_type === transactionForm.transaction_type
+  )
+})
 
 onMounted(async () => {
-  await Promise.all([
-    transactionStore.fetchTransactions(),
-    categoryStore.fetchCategories()
-  ])
+  try {
+    await Promise.all([
+      transactionStore.fetchTransactions(),
+      categoryStore.fetchCategories()
+    ])
+    console.log('分类数据加载完成:', categories.value)
+    if (categories.value.length === 0) {
+      console.warn('分类数据为空，请确保已添加分类')
+    }
+  } catch (error) {
+    console.error('数据加载失败:', error)
+  }
+})
+
+// 监听交易类型变化，清空不匹配的已选择分类
+watch(() => transactionForm.transaction_type, (newType) => {
+  if (newType && transactionForm.category) {
+    const selectedCategory = categories.value.find(cat => cat.id === transactionForm.category)
+    if (selectedCategory && selectedCategory.category_type !== newType) {
+      transactionForm.category = ''
+      console.log('交易类型变化，清空不匹配的已选择分类')
+    }
+  }
 })
 
 const handleSearch = () => {
@@ -424,6 +462,12 @@ const handleEdit = (transaction: Transaction) => {
     payment_method: transaction.payment_method,
     description: transaction.description
   })
+  
+  // 检查分类数据
+  if (categories.value.length === 0) {
+    ElMessage.warning('暂无分类，请先添加分类后再编辑')
+  }
+  
   showAddDialog.value = true
 }
 
@@ -442,22 +486,50 @@ const handleDelete = async (transaction: Transaction) => {
   }
 }
 
+const handleAddNew = () => {
+  // 重置表单
+  Object.assign(transactionForm, {
+    transaction_date: new Date().toISOString().split('T')[0] || '',
+    transaction_type: 'expense',
+    category: '',
+    amount: 0,
+    payment_method: 'cash',
+    description: ''
+  })
+  editingTransaction.value = null
+  
+  // 检查分类数据
+  if (categories.value.length === 0) {
+    ElMessage.warning('暂无分类，请先添加分类后再记账')
+  }
+  
+  showAddDialog.value = true
+}
+
 const handleSubmit = async () => {
   await transactionFormRef.value.validate()
   
   submitting.value = true
   try {
+    // 转换字段名以匹配后端API
+    const submitData: any = {
+      ...transactionForm,
+      date: transactionForm.transaction_date  // 将transaction_date转换为date
+    }
+    delete submitData.transaction_date  // 删除原字段
+    
     if (editingTransaction.value) {
-      await transactionStore.updateTransaction(editingTransaction.value.id, transactionForm)
+      await transactionStore.updateTransaction(editingTransaction.value.id, submitData)
       showSuccess('更新成功')
     } else {
-      await transactionStore.createTransaction(transactionForm)
+      await transactionStore.createTransaction(submitData)
       showSuccess('新增成功')
     }
     
     showAddDialog.value = false
     resetForm()
-  } catch {
+  } catch (error) {
+    console.error('提交失败:', error)
     showError('操作失败')
   } finally {
     submitting.value = false
@@ -488,8 +560,12 @@ const formatDateTime = (date: string) => {
   return new Date(date).toLocaleString('zh-CN')
 }
 
-const formatCurrency = (amount: number) => {
-  return `¥${amount.toFixed(2)}`
+const formatCurrency = (amount: number | string) => {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+  if (isNaN(numAmount)) {
+    return '¥0.00'
+  }
+  return `¥${numAmount.toFixed(2)}`
 }
 
 const getPaymentMethodType = (method: string) => {
@@ -524,6 +600,11 @@ const showError = (message: string) => {
 
 // 监听数据刷新事件
 window.addEventListener('refresh-data', handleRefresh)
+
+// 组件卸载时清理事件监听器
+onUnmounted(() => {
+  window.removeEventListener('refresh-data', handleRefresh)
+})
 </script>
 
 <style scoped>

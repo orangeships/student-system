@@ -36,16 +36,20 @@ export interface TransactionSearchParams {
 export interface TransactionSummary {
   total_income: number
   total_expense: number
-  net_amount: number
+  net_income: number
   transaction_count: number
   income_count: number
   expense_count: number
+  start_date?: string | null
+  end_date?: string | null
 }
 
 export interface CategoryTrend {
-  category_name: string
-  category_type: string
+  category: string
+  category_name?: string
+  category_type?: string
   total_amount: number
+  transaction_count?: number
   percentage: number
 }
 
@@ -53,5 +57,6 @@ export interface MonthlyTrend {
   month: string
   income: number
   expense: number
-  net: number
+  net?: number
+  transaction_count?: number
 }

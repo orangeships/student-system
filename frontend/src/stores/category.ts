@@ -13,11 +13,21 @@ export const useCategoryStore = defineStore('category', () => {
   const fetchCategories = async (params: CategorySearchParams = {}) => {
     loading.value = true
     try {
-      const response = await api.get('/api/categories/', { params })
-      categories.value = response.data.results || response.data
-      totalCount.value = response.data.count || categories.value.length
+      const response = await api.get('/api/transactions/categories/', { params })
+      // 确保返回的是数组
+      const data = response.data.results || response.data
+      if (Array.isArray(data)) {
+        categories.value = data
+        totalCount.value = response.data.count || data.length
+      } else {
+        console.warn('分类数据格式错误，期望数组但收到:', data)
+        categories.value = []
+        totalCount.value = 0
+      }
     } catch (error) {
       console.error('获取分类列表失败:', error)
+      categories.value = []
+      totalCount.value = 0
       throw error
     } finally {
       loading.value = false
@@ -28,11 +38,21 @@ export const useCategoryStore = defineStore('category', () => {
   const searchCategories = async (params: CategorySearchParams = {}) => {
     loading.value = true
     try {
-      const response = await api.get('/api/categories/', { params })
-      categories.value = response.data.results || response.data
-      totalCount.value = response.data.count || categories.value.length
+      const response = await api.get('/api/transactions/categories/', { params })
+      // 确保返回的是数组
+      const data = response.data.results || response.data
+      if (Array.isArray(data)) {
+        categories.value = data
+        totalCount.value = response.data.count || data.length
+      } else {
+        console.warn('搜索分类数据格式错误，期望数组但收到:', data)
+        categories.value = []
+        totalCount.value = 0
+      }
     } catch (error) {
       console.error('搜索分类失败:', error)
+      categories.value = []
+      totalCount.value = 0
       throw error
     } finally {
       loading.value = false
@@ -43,7 +63,7 @@ export const useCategoryStore = defineStore('category', () => {
   const fetchCategory = async (id: number) => {
     loading.value = true
     try {
-      const response = await api.get(`/api/categories/${id}/`)
+      const response = await api.get(`/api/transactions/categories/${id}/`)
       currentCategory.value = response.data
       return response.data
     } catch (error) {
@@ -58,7 +78,7 @@ export const useCategoryStore = defineStore('category', () => {
   const createCategory = async (data: CategoryForm) => {
     loading.value = true
     try {
-      const response = await api.post('/api/categories/', data)
+      const response = await api.post('/api/transactions/categories/', data)
       await fetchCategories() // 重新获取列表
       return response.data
     } catch (error) {
@@ -73,7 +93,7 @@ export const useCategoryStore = defineStore('category', () => {
   const updateCategory = async (id: number, data: CategoryForm) => {
     loading.value = true
     try {
-      const response = await api.put(`/api/categories/${id}/`, data)
+      const response = await api.put(`/api/transactions/categories/${id}/`, data)
       await fetchCategories() // 重新获取列表
       return response.data
     } catch (error) {
@@ -88,7 +108,7 @@ export const useCategoryStore = defineStore('category', () => {
   const deleteCategory = async (id: number) => {
     loading.value = true
     try {
-      await api.delete(`/api/categories/${id}/`)
+      await api.delete(`/api/transactions/categories/${id}/`)
       await fetchCategories() // 重新获取列表
     } catch (error) {
       console.error('删除分类失败:', error)
@@ -102,7 +122,7 @@ export const useCategoryStore = defineStore('category', () => {
   const batchDeleteCategories = async (ids: number[]) => {
     loading.value = true
     try {
-      await api.post('/api/categories/batch_delete/', { ids })
+      await api.post('/api/transactions/categories/batch_delete/', { ids })
       await fetchCategories() // 重新获取列表
     } catch (error) {
       console.error('批量删除分类失败:', error)

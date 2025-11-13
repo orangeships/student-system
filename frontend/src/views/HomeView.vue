@@ -41,14 +41,14 @@
         </el-col>
         
         <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover" @click="navigateToBudget">
+          <el-card class="stat-card" shadow="hover" @click="navigateToTransactions">
             <div class="stat-content">
               <div class="stat-icon-wrapper" style="background-color: #f6ffed;">
                 <el-icon class="stat-icon" style="color: #52c41a; font-size: 24px;"><Wallet /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number" :class="{ 'skeleton': loading }">¥{{ formatMoney((statistics as any)?.total_budget || 0) }}</div>
-                <div class="stat-label">总预算</div>
+                <div class="stat-number" :class="{ 'skeleton': loading }">¥{{ formatMoney((statistics as any)?.total_income || 0) }}</div>
+                <div class="stat-label">总收入</div>
               </div>
             </div>
             <div class="stat-footer">
@@ -64,7 +64,7 @@
         </el-col>
         
         <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover" @click="navigateToFinance">
+          <el-card class="stat-card" shadow="hover" @click="navigateToTransactions">
             <div class="stat-content">
               <div class="stat-icon-wrapper" style="background-color: #fff7e6;">
                 <el-icon class="stat-icon" style="color: #fa8c16; font-size: 24px;"><TrendCharts /></el-icon>
@@ -87,14 +87,14 @@
         </el-col>
         
         <el-col :span="6" :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover" @click="navigateToGoals">
+          <el-card class="stat-card" shadow="hover" @click="navigateToBudget">
             <div class="stat-content">
               <div class="stat-icon-wrapper" style="background-color: #f0f5ff;">
                 <el-icon class="stat-icon" style="color: #2f54eb; font-size: 24px;"><Flag /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number" :class="{ 'skeleton': loading }">{{ (statistics as any)?.active_goals || 0 }}</div>
-                <div class="stat-label">活跃目标</div>
+                <div class="stat-number" :class="{ 'skeleton': loading }">¥{{ formatMoney((statistics as any)?.net_income || 0) }}</div>
+                <div class="stat-label">净收入</div>
               </div>
             </div>
             <div class="stat-footer">
@@ -242,9 +242,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useFinanceStore } from '@/stores/finance'
+import { useTransactionStore } from '@/stores/transaction'
+import { useBudgetStore } from '@/stores/budget'
 import * as echarts from 'echarts'
 import { showSuccess, showError, showInfo } from '@/utils/message'
 import { 
@@ -266,10 +267,16 @@ import {
   Document
 } from '@element-plus/icons-vue'
 
-const financeStore = useFinanceStore()
+const transactionStore = useTransactionStore()
+const budgetStore = useBudgetStore()
 
-const statistics = computed(() => financeStore.statistics)
-const paymentStats = computed(() => financeStore.statistics)
+const statistics = computed(() => ({
+  total_transactions: transactionStore.totalCount,
+  total_income: totalIncome.value,
+  total_expense: totalExpense.value,
+  net_income: netIncome.value,
+  active_budgets: budgetStore.budgets.length
+}))
 
 // 图表引用
 const expenseChart = ref<HTMLElement>()
@@ -293,6 +300,19 @@ const budgetTrend = ref(0)
 const expenseTrend = ref(0)
 const goalsTrend = ref(0)
 
+// 计算总收入和总支出
+const totalIncome = computed(() => {
+  return transactionStore.summary?.total_income || 0
+})
+
+const totalExpense = computed(() => {
+  return transactionStore.summary?.total_expense || 0
+})
+
+const netIncome = computed(() => {
+  return totalIncome.value - totalExpense.value
+})
+
 // 图表加载状态
 const chartLoading = ref({
   expense: false,
@@ -304,64 +324,27 @@ const chartError = ref({
   trend: ''
 })
 
-// 模拟最近活动数据
-const recentActivities = ref([
-  {
-    id: 1,
-    action: '添加交易',
-    description: '餐饮支出',
-    category: 'food',
-    amount: 128.50,
-    created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString()
-  },
-  {
-    id: 2,
-    action: '预算更新',
-    description: '月度预算调整',
-    category: 'budget',
-    amount: 0,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
-  },
-  {
-    id: 3,
-    action: '添加交易',
-    description: '交通费用',
-    category: 'transport',
-    amount: 45.00,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString()
-  },
-  {
-    id: 4,
-    action: '目标达成',
-    description: '储蓄目标完成',
-    category: 'savings',
-    amount: 1000.00,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString()
-  },
-  {
-    id: 5,
-    action: '添加交易',
-    description: '购物支出',
-    category: 'shopping',
-    amount: 299.90,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
-  }
-])
+// 计算最近活动数据
+const recentActivities = computed(() => {
+  // 获取最近的交易记录作为活动数据
+  return transactionStore.transactions
+    .slice(0, 5) // 只取前5条
+    .map(transaction => ({
+      id: transaction.id,
+      action: transaction.transaction_type === 'expense' ? '支出' : '收入',
+      description: transaction.description || transaction.category_name,
+      category: transaction.category_name,
+      amount: transaction.amount,
+      created_at: transaction.transaction_date
+    }))
+})
 
 // 刷新操作记录
 const refreshActivities = async () => {
   activitiesLoading.value = true
   try {
-    // 模拟API调用延迟
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 模拟刷新数据 - 随机添加或更新时间
-    const now = new Date()
-    recentActivities.value = recentActivities.value.map(activity => ({
-      ...activity,
-      created_at: new Date(now.getTime() - Math.random() * 24 * 60 * 60 * 1000).toISOString()
-    }))
-    
+    // 重新加载交易数据
+    await transactionStore.fetchTransactions()
     showSuccess('操作记录已刷新')
   } catch (error) {
     showError('刷新操作记录失败')
@@ -394,8 +377,8 @@ const maxCategoryCount = computed(() => {
 })
 
 const maxMonthlyCount = computed(() => {
-  if (!statistics.value?.monthly_stats?.length) return 0
-  return Math.max(...statistics.value.monthly_stats.map(item => item.total_amount))
+  if (!transactionStore.monthlyTrends?.length) return 0
+  return Math.max(...transactionStore.monthlyTrends.map(item => Math.max(item.income, item.expense)))
 })
 
 const getBarWidth = (value: number, max: number) => {
@@ -416,14 +399,11 @@ const updateExpenseChart = () => {
   
   const chart = echarts.init(expenseChart.value)
   
-  // 模拟支出分类数据
-  const expenseData = [
-    { value: 1200, name: '餐饮' },
-    { value: 800, name: '交通' },
-    { value: 600, name: '购物' },
-    { value: 400, name: '娱乐' },
-    { value: 300, name: '其他' }
-  ]
+  // 使用真实的分类趋势数据
+  const expenseData = transactionStore.categoryTrends.map(item => ({
+    value: item.total_amount,
+    name: item.category_name || item.category || '未分类'
+  }))
   
   const option = {
     tooltip: {
@@ -472,16 +452,15 @@ const updateExpenseChart = () => {
   })
 }
 
-// 更新收支趋势图表
+// 更新月度收支趋势图表
 const updateTrendChart = () => {
   if (!trendChart.value) return
   
   const chart = echarts.init(trendChart.value)
   
-  // 模拟月度收支数据
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月']
-  const incomeData = [8000, 8500, 7800, 9200, 8800, 9500]
-  const expenseData = [6500, 7200, 6800, 7500, 7100, 7800]
+  const months = transactionStore.monthlyTrends.map(item => item.month)
+  const incomeData = transactionStore.monthlyTrends.map(item => item.income)
+  const expenseData = transactionStore.monthlyTrends.map(item => item.expense)
   
   const option = {
     tooltip: {
@@ -606,7 +585,8 @@ const getActivityIcon = (action: string) => {
   if (action.includes('新增')) return Plus
   if (action.includes('编辑')) return Edit
   if (action.includes('删除')) return Delete
-  if (action.includes('缴费')) return Money
+  if (action.includes('支出')) return Money
+  if (action.includes('收入')) return Wallet
   return Document
 }
 
@@ -652,6 +632,10 @@ const navigateToGoals = () => {
   router.push({ name: 'goals' })
 }
 
+const navigateToCategories = () => {
+  router.push({ name: 'categories' })
+}
+
 const navigateToStatistics = () => {
   router.push({ name: 'statistics' })
 }
@@ -660,19 +644,31 @@ const navigateToStatistics = () => {
 const reloadExpenseChart = () => {
   chartError.value.expense = ''
   chartLoading.value.expense = true
-  setTimeout(() => {
-    chartLoading.value.expense = false
-    updateExpenseChart()
-  }, 500)
+  transactionStore.fetchCategoryTrends()
+    .then(() => {
+      chartLoading.value.expense = false
+      updateExpenseChart()
+    })
+    .catch((err) => {
+      console.warn('分类趋势数据重新加载失败:', err)
+      chartError.value.expense = '分类趋势数据加载失败'
+      chartLoading.value.expense = false
+    })
 }
 
 const reloadTrendChart = () => {
   chartError.value.trend = ''
   chartLoading.value.trend = true
-  setTimeout(() => {
-    chartLoading.value.trend = false
-    updateTrendChart()
-  }, 500)
+  transactionStore.fetchMonthlyTrends()
+    .then(() => {
+      chartLoading.value.trend = false
+      updateTrendChart()
+    })
+    .catch((err) => {
+      console.warn('月度趋势数据重新加载失败:', err)
+      chartError.value.trend = '月度趋势数据加载失败'
+      chartLoading.value.trend = false
+    })
 }
 
 // 加载数据
@@ -680,8 +676,30 @@ const loadData = async () => {
   loading.value = true
   error.value = ''
   try {
-    // Only load finance statistics since this is now a personal finance system
-    await financeStore.fetchStatistics()
+    // 加载交易统计数据
+    await transactionStore.fetchTransactionSummary()
+    console.log('交易统计数据:', transactionStore.summary)
+    await transactionStore.fetchTransactions()
+    console.log('交易列表数据:', transactionStore.transactions)
+    
+    // 分别加载图表数据，单个失败不影响整体
+    try {
+      await transactionStore.fetchCategoryTrends()
+      console.log('分类趋势数据:', transactionStore.categoryTrends)
+    } catch (err) {
+      console.warn('分类趋势数据加载失败:', err)
+      chartError.value.expense = '分类趋势数据加载失败'
+    }
+    
+    try {
+      await transactionStore.fetchMonthlyTrends()
+      console.log('月度趋势数据:', transactionStore.monthlyTrends)
+    } catch (err) {
+      console.warn('月度趋势数据加载失败:', err)
+      chartError.value.trend = '月度趋势数据加载失败'
+    }
+    
+    await budgetStore.fetchBudgets()
     loading.value = false
   } catch (err) {
     error.value = '加载数据失败，请重试'
@@ -697,6 +715,14 @@ onMounted(async () => {
     updateExpenseChart()
     updateTrendChart()
   }, 100)
+  
+  // 监听数据更新事件
+  window.addEventListener('refresh-data', loadData)
+})
+
+onUnmounted(() => {
+  // 清理事件监听器
+  window.removeEventListener('refresh-data', loadData)
 })
 </script>
 

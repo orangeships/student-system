@@ -4,7 +4,9 @@ from .views import (
     TransactionViewSet, 
     TransactionCategoryViewSet, 
     BudgetViewSet, 
-    FinancialGoalViewSet
+    FinancialGoalViewSet,
+    AlertViewSet,
+    ExportTaskViewSet
 )
 
 router = DefaultRouter()
@@ -12,7 +14,9 @@ router.register(r'transactions', TransactionViewSet)
 router.register(r'categories', TransactionCategoryViewSet)
 router.register(r'budgets', BudgetViewSet)
 router.register(r'goals', FinancialGoalViewSet)
+router.register(r'alerts', AlertViewSet)
+router.register(r'exports', ExportTaskViewSet)
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]

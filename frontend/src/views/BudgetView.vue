@@ -258,7 +258,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useBudgetStore } from '@/stores/budget'
 import { useCategoryStore } from '@/stores/category'
@@ -465,8 +465,12 @@ const resetForm = () => {
   })
 }
 
-const formatCurrency = (amount: number) => {
-  return `¥${amount.toFixed(2)}`
+const formatCurrency = (amount: number | string) => {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+  if (isNaN(numAmount)) {
+    return '¥0.00'
+  }
+  return `¥${numAmount.toFixed(2)}`
 }
 
 const formatDate = (date: string) => {
@@ -507,6 +511,11 @@ const showError = (message: string) => {
 
 // 监听数据刷新事件
 window.addEventListener('refresh-data', handleRefresh)
+
+// 组件卸载时移除事件监听器
+onUnmounted(() => {
+  window.removeEventListener('refresh-data', handleRefresh)
+})
 </script>
 
 <style scoped>

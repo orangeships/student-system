@@ -7,13 +7,17 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 })
 
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
     return config
   },
   (error) => {
@@ -24,7 +28,7 @@ api.interceptors.request.use(
 // 响应拦截器
 api.interceptors.response.use(
   (response) => {
-    return response.data
+    return response  // 返回完整响应对象，让调用方可以访问 response.data.results 等字段
   },
   (error) => {
     console.error('API Error:', error)
@@ -43,6 +47,8 @@ api.interceptors.response.use(
           break
         case 401:
           errorMessage = '未授权，请重新登录'
+          localStorage.removeItem('token')
+          window.location.href = '/login'
           break
         case 403:
           errorMessage = '权限不足'
@@ -75,3 +81,33 @@ api.interceptors.response.use(
 )
 
 export default api
+
+// 认证相关API
+export const authAPI = {
+  login: (credentials: { username: string; password: string }) =>
+    api.post('/auth/login/', credentials),
+  
+  register: (userData: { username: string; password: string; email: string }) =>
+    api.post('/auth/register/', userData),
+  
+  refreshToken: () =>
+    api.post('/auth/token/refresh/'),
+  
+  getProfile: () =>
+    api.get('/auth/profile/')
+}
+
+// 交易相关API
+export const transactionsAPI = {
+  getTransactions: (params?: any) =>
+    api.get('/transactions/', { params }),
+  
+  createTransaction: (data: any) =>
+    api.post('/transactions/', data),
+  
+  updateTransaction: (id: number, data: any) =>
+    api.put(`/transactions/${id}/`, data),
+  
+  deleteTransaction: (id: number) =>
+    api.delete(`/transactions/${id}/`)
+}

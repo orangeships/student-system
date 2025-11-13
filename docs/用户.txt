@@ -1,0 +1,2 @@
+后端管理员用户：账户：12924 密码：gaoyufeng
+前端等其他测试：账号testuser 密码testpass123
